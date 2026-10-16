@@ -9,12 +9,10 @@ import {
   Phone, 
   MessageSquare, 
   MapPin, 
-  User, 
-  FileText 
+  User 
 } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { compressImageToBase64 } from '../utils/imageCompressor';
 import { WUKARI_AREAS } from '../data/constants';
 import { OkadaRider } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -40,33 +38,84 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
   const [bikeNumber, setBikeNumber] = useState('');
   const [isAvailable, setIsAvailable] = useState(true);
 
-  // Picture state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string>('');
+  // Direct Base64 Photo state
+  const [photoUrl, setPhotoUrl] = useState<string>('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusText, setStatusText] = useState('');
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 1. handleImage check: const file = e.target.files?.[0]; if (!file) return;
+  // 2. reader.readAsDataURL(file) - NOT readAsText
+  // 3. Save base64 directly to photoUrl state immediately after reader.onload
+  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onerror = () => {
+      alert('Failed to read image file. Please try selecting the picture again.');
+    };
+
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (!result) return;
+
+      // Compress to max 700px width with HTML Canvas (jpeg quality 0.6)
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        const maxWidth = 700;
+
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          setPhotoUrl(compressedBase64);
+        } else {
+          setPhotoUrl(result);
+        }
+      };
+
+      img.onerror = () => {
+        setPhotoUrl(result);
+      };
+
+      img.src = result;
+    };
+
+    // Use readAsDataURL
+    reader.readAsDataURL(file);
   };
 
   const removePhoto = () => {
-    setSelectedFile(null);
-    setPreview('');
+    setPhotoUrl('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedFile) {
-      showToast('Please upload a clear picture of yourself or with your bike', 'error');
+    // 4. Before publishing, check if (!photoUrl) alert "Please select image" and return
+    if (!photoUrl) {
+      alert('Please select rider picture');
       return;
     }
 
@@ -91,14 +140,10 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
     }
 
     setIsSubmitting(true);
+    setStatusText('Registering rider in Wukari...');
 
     try {
-      // Step 1: Compress photo to max 700px JPEG 0.6
-      setStatusText('Compressing rider photo to 700px...');
-      const base64Photo = await compressImageToBase64(selectedFile, 700, 0.6);
-
-      // Step 2: 7-day expiration
-      setStatusText('Registering rider in Wukari...');
+      // 5. 7-day expiration
       const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const expiresAtTimestamp = Timestamp.fromDate(sevenDaysFromNow);
 
@@ -111,7 +156,7 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
         location: finalLocation,
         bikeNumber: bikeNumber.trim().toUpperCase(),
         isAvailable,
-        photoUrl: base64Photo,
+        photoUrl: photoUrl, // Direct base64 string
         createdAt: serverTimestamp(),
         expiresAt: expiresAtTimestamp,
         status: 'approved' as const,
@@ -131,8 +176,8 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
           condition: 'New' as const,
           papers: 'Complete' as const,
           model: bikeNumber.trim().toUpperCase(),
-          images: [base64Photo],
-          imageUrl: base64Photo,
+          images: [photoUrl],
+          imageUrl: photoUrl,
           location: `${finalLocation}, Wukari`,
           sellerName: name.trim(),
           phoneNumber: phoneNumber.trim(),
@@ -192,7 +237,7 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
-          {/* Photo Upload (Required, Base64) */}
+          {/* Photo Upload (Direct Base64 Conversion) */}
           <div>
             <label className="block font-bold text-gray-800 mb-1">
               Rider Picture <span className="text-red-500">*</span>
@@ -201,9 +246,9 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
               </span>
             </label>
 
-            {preview ? (
+            {photoUrl ? (
               <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-[#fb6514] shadow-xs">
-                <img src={preview} alt="Rider preview" className="w-full h-full object-cover" />
+                <img src={photoUrl} alt="Rider preview" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={removePhoto}
@@ -216,15 +261,20 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
               <label className="w-full border-2 border-dashed border-gray-300 hover:border-[#fb6514] rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50/40">
                 <Upload className="w-8 h-8 text-[#fb6514] mb-1.5" />
                 <span className="text-xs font-bold text-gray-800">Upload Your Picture</span>
-                <span className="text-[11px] text-gray-400 mt-0.5">Auto compressed to 700px JPEG 0.6</span>
+                <span className="text-[11px] text-gray-400 mt-0.5">Auto-converted to Base64 (700px quality 0.6)</span>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleFileChange}
+                  onChange={handleImage}
                   className="hidden"
                   disabled={isSubmitting}
                 />
               </label>
+            )}
+            {!photoUrl && (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg font-medium mt-2">
+                ⚠️ Please select your photo to proceed.
+              </p>
             )}
           </div>
 

@@ -4,11 +4,16 @@
  * This guarantees free Firestore storage without needing Firebase Storage (Blaze plan).
  */
 export async function compressImageToBase64(
-  file: File,
+  file: File | Blob,
   maxWidth = 700,
   quality = 0.6
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (!file || !(file instanceof Blob)) {
+      reject(new Error('No valid image file provided'));
+      return;
+    }
+
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Failed to read image file'));
     reader.onload = (readerEvent) => {
@@ -19,7 +24,10 @@ export async function compressImageToBase64(
       }
 
       const img = new Image();
-      img.onerror = () => reject(new Error('Invalid image file'));
+      img.onerror = () => {
+        // Fallback to dataUrl directly if image decoding fails
+        resolve(dataUrl);
+      };
       img.onload = () => {
         let width = img.width;
         let height = img.height;
@@ -40,7 +48,6 @@ export async function compressImageToBase64(
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          // Fallback to dataUrl directly if canvas context is unavailable
           resolve(dataUrl);
           return;
         }

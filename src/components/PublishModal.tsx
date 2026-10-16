@@ -8,14 +8,11 @@ import {
   Bike, 
   Phone, 
   MessageSquare, 
-  ShieldCheck, 
   Sparkles,
-  MapPin,
-  FileText
+  MapPin
 } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { compressImageToBase64 } from '../utils/imageCompressor';
 import { CATEGORIES, OKADA_MODELS, NIGERIAN_LOCATIONS } from '../data/constants';
 import { Product } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -50,11 +47,11 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
 
-  // Images state (max 3 as requested)
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  // Primary Base64 Image and additional gallery images
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [images, setImages] = useState<string[]>([]);
 
-  // Publishing phase indicator
+  // Publishing indicator
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState('');
 
@@ -80,29 +77,92 @@ export const PublishModal: React.FC<PublishModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+  // 1. handleImage checks: const file = e.target.files?.[0]; if (!file) return;
+  // 2. Use FileReader: reader.readAsDataURL(file) - NOT readAsText
+  // 3. Save base64 directly to imageUrl state immediately after reader.onload
+  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    // Up to 3 images as requested
-    const total = [...selectedFiles, ...files].slice(0, 3);
-    setSelectedFiles(total);
+    const reader = new FileReader();
+    reader.onerror = () => {
+      alert('Failed to read image file. Please try selecting the picture again.');
+    };
 
-    const prevs = total.map((file) => URL.createObjectURL(file));
-    setPreviews(prevs);
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (!result) return;
+
+      // Compress to max 700px width with HTML Canvas (jpeg quality 0.6)
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        const maxWidth = 700;
+
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx) {
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          // Save base64 directly to imageUrl state immediately
+          setImageUrl(compressedBase64);
+          setImages((prev) => {
+            if (prev.length < 3) {
+              return [...prev, compressedBase64];
+            }
+            return [compressedBase64, prev[1], prev[2]];
+          });
+        } else {
+          setImageUrl(result);
+          setImages((prev) => (prev.length < 3 ? [...prev, result] : [result]));
+        }
+      };
+
+      img.onerror = () => {
+        // Fallback to result directly
+        setImageUrl(result);
+        setImages((prev) => (prev.length < 3 ? [...prev, result] : [result]));
+      };
+
+      img.src = result;
+    };
+
+    // Use readAsDataURL - NOT readAsText
+    reader.readAsDataURL(file);
   };
 
   const removeImage = (index: number) => {
-    const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(updatedFiles);
-    setPreviews(updatedFiles.map((file) => URL.createObjectURL(file)));
+    const updated = images.filter((_, i) => i !== index);
+    setImages(updated);
+    if (updated.length > 0) {
+      setImageUrl(updated[0]);
+    } else {
+      setImageUrl('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedFiles.length === 0) {
-      showToast('Please upload at least 1 photo of the item', 'error');
+    // 4. Before publishing, check if (!imageUrl) alert "Please select image" and return
+    if (!imageUrl) {
+      alert('Please select image');
       return;
     }
 
@@ -127,31 +187,18 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     }
 
     setIsPublishing(true);
+    setPublishStatus('Publishing ad to marketplace...');
 
     try {
-      // Step 1: Compressing photos using HTML canvas max 700px, jpeg 0.6 quality
-      setPublishStatus('Compressing images to 700px JPEG 0.6...');
-      const base64Images: string[] = [];
-      for (const file of selectedFiles) {
-        const base64 = await compressImageToBase64(file, 700, 0.6);
-        base64Images.push(base64);
-      }
-
-      // Step 2: Convert to Firestore data URL
-      setPublishStatus('Converting to base64...');
-      await new Promise((r) => setTimeout(r, 150));
-
-      // Step 3: Saving to Firestore zangamarket1 with 7-day expiration
-      setPublishStatus('Publishing ad to marketplace...');
-      const primaryImage = base64Images[0];
-
-      // Calculate 7-day expiry Timestamp
+      // 5. Calculate 7-day expiry Timestamp
       const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const expiresAtTimestamp = Timestamp.fromDate(sevenDaysFromNow);
 
       const finalTitle = isOkadaMode && model && !title.includes(model)
         ? `${model} - ${title.trim()}`
         : title.trim();
+
+      const base64List = images.length > 0 ? images : [imageUrl];
 
       const productPayload = {
         title: finalTitle,
@@ -161,8 +208,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         condition,
         papers: isOkadaMode ? papers : 'N/A',
         model: isOkadaMode ? model : '',
-        images: base64Images,
-        imageUrl: primaryImage,
+        images: base64List,
+        imageUrl: imageUrl, // base64 string
         location,
         sellerName: sellerName.trim() || 'Verified Seller',
         phoneNumber: phoneNumber.trim(),
@@ -196,12 +243,12 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         expiresAt: sevenDaysFromNow,
       };
 
-      // Reset
+      // Reset form
       setTitle('');
       setPrice('');
       setDescription('');
-      setSelectedFiles([]);
-      setPreviews([]);
+      setImageUrl('');
+      setImages([]);
 
       onPublished(createdProduct);
       onClose();
@@ -271,19 +318,20 @@ export const PublishModal: React.FC<PublishModalProps> = ({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
-          {/* Photos Upload (Up to 3, compressed to 700px JPEG 0.6) */}
+          {/* Photos Upload with instant Base64 preview */}
           <div>
             <label className="block font-bold text-gray-800 mb-1">
               Upload Photos <span className="text-red-500">*</span>
               <span className="font-normal text-gray-500 ml-1">
-                (Up to 3 pictures, auto-compressed to 700px quality 0.6)
+                (Up to 3 pictures, auto-compressed to 700px JPEG 0.6)
               </span>
             </label>
 
             <div className="grid grid-cols-3 gap-3 mb-2">
-              {previews.map((previewUrl, idx) => (
+              {/* Display converted Base64 images directly */}
+              {images.map((b64, idx) => (
                 <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-                  <img src={previewUrl} alt="Ad preview" className="w-full h-full object-cover" />
+                  <img src={b64} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(idx)}
@@ -300,7 +348,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                 </div>
               ))}
 
-              {previews.length < 3 && (
+              {images.length < 3 && (
                 <label className="aspect-square border-2 border-dashed border-gray-300 hover:border-[#fb6514] rounded-xl flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50/40">
                   <Upload className="w-6 h-6 text-gray-500 mb-1" />
                   <span className="text-xs font-bold text-gray-700">Add Picture</span>
@@ -308,14 +356,18 @@ export const PublishModal: React.FC<PublishModalProps> = ({
                   <input
                     type="file"
                     accept="image/*"
-                    multiple
-                    onChange={handleFileChange}
+                    onChange={handleImage}
                     className="hidden"
                     disabled={isPublishing}
                   />
                 </label>
               )}
             </div>
+            {!imageUrl && (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded-lg font-medium">
+                ⚠️ Please select a picture of the item. It will convert and preview in Base64 instantly.
+              </p>
+            )}
           </div>
 
           {/* Okada Model Dropdown (if Okada mode) */}
@@ -469,7 +521,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
             </div>
           </div>
 
-          {/* Phone Number & WhatsApp Number (Required for 2 Big Buttons) */}
+          {/* Phone Number & WhatsApp Number */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-emerald-50/60 border border-emerald-200 p-3 rounded-xl">
             <div>
               <label htmlFor="publish-phone-number" className="block font-bold text-gray-800 mb-1">
