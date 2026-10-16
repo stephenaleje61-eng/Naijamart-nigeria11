@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Marketplace product listed by a registered seller",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "price": { "type": "number" },
+        "category": { "type": "string", "maxLength": 60 },
+        "condition": { "type": "string", "enum": ["New", "Used", "Fair"] },
+        "images": { "type": "array" },
+        "imageUrl": { "type": "string" },
+        "location": { "type": "string", "maxLength": 100 },
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "sellerName": { "type": "string", "maxLength": 100 },
+        "sellerPhone": { "type": "string", "maxLength": 30 },
+        "status": { "type": "string", "enum": ["approved", "pending", "sold", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "views": { "type": "number" }
+      },
+      "required": ["title", "description", "price", "category", "condition", "imageUrl", "location", "sellerId", "sellerName", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile with contact info and location",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email" },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "location": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "fullName", "phone", "location"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Conversation between buyer and seller regarding a product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "maxLength": 128 },
+        "productTitle": { "type": "string", "maxLength": 150 },
+        "productPrice": { "type": "number" },
+        "productImageUrl": { "type": "string" },
+        "buyerId": { "type": "string", "maxLength": 128 },
+        "buyerName": { "type": "string", "maxLength": 100 },
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "sellerName": { "type": "string", "maxLength": 100 },
+        "participants": { "type": "array" },
+        "lastMessage": { "type": "string", "maxLength": 1000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "buyerId", "sellerId", "participants", "lastMessage"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "All marketplace product listings"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Registered buyer and seller profiles"
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Marketplace buyer-seller chats"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "ChatMessage" },
+      "description": "Subcollection messages for each chat"
+    }
+  }
+}
