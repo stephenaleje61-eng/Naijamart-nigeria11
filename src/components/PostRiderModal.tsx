@@ -11,7 +11,7 @@ import {
   MapPin, 
   User 
 } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { WUKARI_AREAS } from '../data/constants';
 import { OkadaRider } from '../types';
@@ -143,10 +143,6 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
     setStatusText('Registering rider in Wukari...');
 
     try {
-      // 5. 7-day expiration
-      const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const expiresAtTimestamp = Timestamp.fromDate(sevenDaysFromNow);
-
       const finalLocation = customLocation.trim() || location;
 
       const riderPayload = {
@@ -158,7 +154,6 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
         isAvailable,
         photoUrl: photoUrl, // Direct base64 string
         createdAt: serverTimestamp(),
-        expiresAt: expiresAtTimestamp,
         status: 'approved' as const,
         category: 'Okada Riders Wukari 🏍️' as const,
       };
@@ -184,7 +179,6 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
           whatsappNumber: whatsappNumber.trim(),
           status: 'approved' as const,
           createdAt: serverTimestamp(),
-          expiresAt: expiresAtTimestamp,
           views: 0,
           isOkada: true,
         });
@@ -198,7 +192,6 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
         id: docRef.id,
         ...riderPayload,
         createdAt: new Date(),
-        expiresAt: sevenDaysFromNow,
       };
 
       onRiderRegistered(createdRider);

@@ -111,7 +111,7 @@ export const RiderCard: React.FC<RiderCardProps> = ({ rider }) => {
         {/* WhatsApp Rider Button */}
         <a
           href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-            `Hello ${rider.name}, I found your contact on NaijaMart Wukari Okada Riders. Are you available for a ride around ${rider.location}?`
+            `Hello ${rider.name}, I found your contact on NaijaMarket Hub Wukari Okada Riders. Are you available for a ride around ${rider.location}?`
           )}`}
           target="_blank"
           rel="noopener noreferrer"

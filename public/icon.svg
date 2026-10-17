@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Green squircle background -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#00a862"/>
+  
+  <!-- White shopping bag with cutout handle -->
+  <path fill="#ffffff" fill-rule="evenodd" d="
+    M 148,176
+    C 134,176 124,187 122,201
+    L 100,355
+    C 97,374 112,390 131,390
+    L 381,390
+    C 400,390 415,374 412,355
+    L 390,201
+    C 388,187 378,176 364,176
+    L 318,176
+    L 298,132
+    C 293,122 283,116 272,116
+    L 240,116
+    C 229,116 219,122 214,132
+    L 194,176
+    Z
+    M 218,176
+    L 238,144
+    C 240,140 244,138 248,138
+    L 264,138
+    C 268,138 272,140 274,144
+    L 294,176
+    Z
+  "/>
+  
+  <!-- Green "N" letter in the center of the bag -->
+  <path fill="#00a862" d="
+    M 200,224
+    L 236,224
+    L 278,302
+    L 278,224
+    L 312,224
+    L 312,350
+    L 276,350
+    L 234,272
+    L 234,350
+    L 200,350
+    Z
+  "/>
+</svg>

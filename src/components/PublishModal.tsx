@@ -11,7 +11,7 @@ import {
   Sparkles,
   MapPin
 } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { CATEGORIES, OKADA_MODELS, NIGERIAN_LOCATIONS } from '../data/constants';
 import { Product } from '../types';
@@ -190,10 +190,6 @@ export const PublishModal: React.FC<PublishModalProps> = ({
     setPublishStatus('Publishing ad to marketplace...');
 
     try {
-      // 5. Calculate 7-day expiry Timestamp
-      const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const expiresAtTimestamp = Timestamp.fromDate(sevenDaysFromNow);
-
       const finalTitle = isOkadaMode && model && !title.includes(model)
         ? `${model} - ${title.trim()}`
         : title.trim();
@@ -216,7 +212,6 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         whatsappNumber: whatsappNumber.trim(),
         status: 'approved' as const,
         createdAt: serverTimestamp(),
-        expiresAt: expiresAtTimestamp,
         views: 0,
         isOkada: isOkadaMode,
       };
@@ -240,7 +235,6 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         id: docRef.id,
         ...productPayload,
         createdAt: new Date(),
-        expiresAt: sevenDaysFromNow,
       };
 
       // Reset form
@@ -272,10 +266,10 @@ export const PublishModal: React.FC<PublishModalProps> = ({
             {isOkadaMode ? <Bike className="w-5 h-5 text-white" /> : <Sparkles className="w-5 h-5 text-yellow-300" />}
             <div>
               <h2 className="font-black text-base sm:text-lg">
-                {isOkadaMode ? 'Post Okada Motorcycle For Sale' : 'Post Free Ad on NaijaMart'}
+                {isOkadaMode ? 'Post Okada Motorcycle For Sale' : 'Post Free Ad on NaijaMarket Hub'}
               </h2>
               <p className="text-[11px] text-white/90 font-medium">
-                No signup required • 100% Free • Base64 Instant Upload • Live for 7 Days
+                No signup required • 100% Free • Base64 Instant Upload • Permanent Listing
               </p>
             </div>
           </div>
@@ -595,7 +589,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               ) : (
                 <>
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>{isOkadaMode ? 'Publish Okada Ad Now 🏍️' : 'Post Ad to NaijaMart'}</span>
+                  <span>{isOkadaMode ? 'Publish Okada Ad Now 🏍️' : 'Post Ad to NaijaMarket Hub'}</span>
                 </>
               )}
             </button>

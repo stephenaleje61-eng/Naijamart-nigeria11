@@ -91,24 +91,13 @@ function MarketplaceApp() {
       q,
       (snapshot) => {
         const fetched: Product[] = [];
-        const now = Date.now();
 
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-
-          let isExpired = false;
-          if (data.expiresAt?.toDate) {
-            isExpired = data.expiresAt.toDate().getTime() < now;
-          } else if (data.expiresAt) {
-            isExpired = new Date(data.expiresAt).getTime() < now;
-          }
-
-          if (!isExpired) {
-            fetched.push({
-              id: docSnap.id,
-              ...data,
-            } as Product);
-          }
+          fetched.push({
+            id: docSnap.id,
+            ...data,
+          } as Product);
         });
 
         fetched.sort((a, b) => {
@@ -125,16 +114,9 @@ function MarketplaceApp() {
         const fallbackQ = query(productsRef, where('status', '==', 'approved'));
         onSnapshot(fallbackQ, (snap) => {
           const fetched: Product[] = [];
-          const now = Date.now();
           snap.forEach((docSnap) => {
             const data = docSnap.data();
-            let isExpired = false;
-            if (data.expiresAt?.toDate) {
-              isExpired = data.expiresAt.toDate().getTime() < now;
-            }
-            if (!isExpired) {
-              fetched.push({ id: docSnap.id, ...data } as Product);
-            }
+            fetched.push({ id: docSnap.id, ...data } as Product);
           });
           setProducts(fetched);
           setLoadingProducts(false);
@@ -166,24 +148,13 @@ function MarketplaceApp() {
       q,
       (snapshot) => {
         const fetched: OkadaRider[] = [];
-        const now = Date.now();
 
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-
-          let isExpired = false;
-          if (data.expiresAt?.toDate) {
-            isExpired = data.expiresAt.toDate().getTime() < now;
-          } else if (data.expiresAt) {
-            isExpired = new Date(data.expiresAt).getTime() < now;
-          }
-
-          if (!isExpired) {
-            fetched.push({
-              id: docSnap.id,
-              ...data,
-            } as OkadaRider);
-          }
+          fetched.push({
+            id: docSnap.id,
+            ...data,
+          } as OkadaRider);
         });
 
         fetched.sort((a, b) => {
@@ -200,16 +171,9 @@ function MarketplaceApp() {
         const fallbackQ = query(ridersRef, where('status', '==', 'approved'));
         onSnapshot(fallbackQ, (snap) => {
           const fetched: OkadaRider[] = [];
-          const now = Date.now();
           snap.forEach((docSnap) => {
             const data = docSnap.data();
-            let isExpired = false;
-            if (data.expiresAt?.toDate) {
-              isExpired = data.expiresAt.toDate().getTime() < now;
-            }
-            if (!isExpired) {
-              fetched.push({ id: docSnap.id, ...data } as OkadaRider);
-            }
+            fetched.push({ id: docSnap.id, ...data } as OkadaRider);
           });
           setRiders(fetched);
           setLoadingRiders(false);

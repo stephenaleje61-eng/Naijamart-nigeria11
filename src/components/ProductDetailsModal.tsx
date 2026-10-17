@@ -262,7 +262,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                     href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
                       `Hello ${product.sellerName || 'Seller'}, I am interested in your listing "${product.title}" (${formatNaira(
                         product.price
-                      )}) on NaijaMart. Is it still available for inspection in ${product.location || 'your area'}?`
+                      )}) on NaijaMarket Hub. Is it still available for inspection in ${product.location || 'your area'}?`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"

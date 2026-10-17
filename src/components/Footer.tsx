@@ -20,11 +20,13 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Brand & Okada focus */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-[#008751] flex items-center justify-center text-white font-extrabold text-lg">
-                N
-              </div>
+              <img 
+                src="/icon.png" 
+                alt="NaijaMarket Hub" 
+                className="w-8 h-8 rounded-lg object-contain bg-[#008751]" 
+              />
               <span className="text-xl font-black text-white tracking-tight">
-                Naija<span className="text-[#008751]">Mart</span>
+                NaijaMarket <span className="text-[#008751]">Hub</span>
               </span>
             </div>
             <p className="text-gray-400 text-xs leading-relaxed mb-3">
@@ -106,7 +108,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         <div className="pt-6 border-t border-gray-800 text-center sm:flex sm:justify-between sm:items-center text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} NaijaMart - Jumia + Temu + Okada Market. No Login Required.</p>
+          <p>© {new Date().getFullYear()} NaijaMarket Hub - Jumia + Temu + Okada Market. No Login Required.</p>
           <p className="mt-1 sm:mt-0 text-[11px] text-gray-400">100% Free Base64 Image Processing</p>
         </div>
       </div>

@@ -29,7 +29,7 @@ export const MyAdsModal: React.FC<MyAdsModalProps> = ({
 
   const handleDelete = async (productId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this listing from NaijaMart?')) return;
+    if (!window.confirm('Are you sure you want to delete this listing from NaijaMarket Hub?')) return;
 
     try {
       await deleteDoc(doc(db, 'products', productId));
@@ -128,7 +128,7 @@ export const MyAdsModal: React.FC<MyAdsModalProps> = ({
 
         {/* Footer */}
         <div className="p-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
-          <span className="text-gray-500 text-[11px]">Listings auto-expire after 7 days</span>
+          <span className="text-gray-500 text-[11px]">Listings remain active until deleted</span>
           <button
             onClick={() => {
               onClose();

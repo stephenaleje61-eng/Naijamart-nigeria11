@@ -50,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
               <Zap className="w-3 h-3 text-yellow-300 fill-yellow-300" /> Wukari Special
             </span>
-            <span className="truncate">NaijaMart: Jumia + Temu + Okada Market • Free Base64 • Direct Calls</span>
+            <span className="truncate">NaijaMarket Hub: Jumia + Temu + Okada Market • Free Base64 • Direct Calls</span>
           </div>
           <div className="hidden sm:flex items-center gap-3 text-[11px]">
             <button 
@@ -79,16 +79,18 @@ export const Header: React.FC<HeaderProps> = ({
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#008751] flex items-center justify-center text-white font-extrabold text-xl sm:text-2xl shadow-sm tracking-tighter">
-            N
-          </div>
+          <img 
+            src="/icon.png" 
+            alt="NaijaMarket Hub" 
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-xs bg-[#008751]" 
+          />
           <div>
             <div className="flex items-center">
-              <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight">Naija</span>
-              <span className="text-xl sm:text-2xl font-black text-[#008751] tracking-tight">Mart</span>
+              <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight">NaijaMarket</span>
+              <span className="text-xl sm:text-2xl font-black text-[#008751] tracking-tight ml-1">Hub</span>
             </div>
             <p className="text-[10px] text-gray-500 font-medium hidden sm:block -mt-1">
-              Nigeria Online Shopping & Okada Hub
+              Buy & Sell Across Nigeria | Wukari & Taraba
             </p>
           </div>
         </div>

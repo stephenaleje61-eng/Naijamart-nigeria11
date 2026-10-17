@@ -160,7 +160,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* WhatsApp Button */}
         <a
           href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-            `Hello ${product.sellerName || 'Seller'}, I am contacting you from NaijaMart regarding "${product.title}" listed for ${formatNaira(
+            `Hello ${product.sellerName || 'Seller'}, I am contacting you from NaijaMarket Hub regarding "${product.title}" listed for ${formatNaira(
               product.price
             )} in ${product.location || 'Nigeria'}. Is it still available?`
           )}`}
