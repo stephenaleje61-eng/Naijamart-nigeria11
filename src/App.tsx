@@ -18,10 +18,15 @@ import { ProductDetailsModal } from './components/ProductDetailsModal';
 import { MyAdsModal } from './components/MyAdsModal';
 import { PostRiderModal } from './components/PostRiderModal';
 import { WukariRidersView } from './components/WukariRidersView';
+import { WantedBoardView } from './components/WantedBoardView';
+import { PostWantedModal } from './components/PostWantedModal';
+import { IHaveThisModal } from './components/IHaveThisModal';
+import { BargainChatModal } from './components/BargainChatModal';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
-import { Product, FilterState, OkadaRider } from './types';
-import { ShoppingBag, PlusCircle, Bike, Users } from 'lucide-react';
+import { Product, FilterState, OkadaRider, WantedItem } from './types';
+import { INITIAL_WANTED_REQUESTS } from './data/constants';
+import { ShoppingBag, PlusCircle, Bike, Users, Sparkles, ArrowRight } from 'lucide-react';
 
 function MarketplaceApp() {
   const { showToast } = useToast();
@@ -34,8 +39,14 @@ function MarketplaceApp() {
   const [riders, setRiders] = useState<OkadaRider[]>([]);
   const [loadingRiders, setLoadingRiders] = useState(true);
 
-  // Active page view mode: 'marketplace' or 'wukari-riders'
-  const [viewMode, setViewMode] = useState<'marketplace' | 'wukari-riders'>('marketplace');
+  // Wanted Board state
+  const [wantedItems, setWantedItems] = useState<WantedItem[]>(INITIAL_WANTED_REQUESTS);
+  const [loadingWanted, setLoadingWanted] = useState(false);
+  const [isPostWantedOpen, setIsPostWantedOpen] = useState(false);
+  const [selectedWantedItem, setSelectedWantedItem] = useState<WantedItem | null>(null);
+
+  // Active page view mode: 'marketplace' | 'wukari-riders' | 'wanted-board'
+  const [viewMode, setViewMode] = useState<'marketplace' | 'wukari-riders' | 'wanted-board'>('marketplace');
 
   // Filters state
   const [filters, setFilters] = useState<FilterState>({
@@ -67,8 +78,9 @@ function MarketplaceApp() {
   const [publishIsOkada, setPublishIsOkada] = useState(false);
   const [isPostRiderOpen, setIsPostRiderOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [bargainProduct, setBargainProduct] = useState<Product | null>(null);
   const [isMyAdsOpen, setIsMyAdsOpen] = useState(false);
-  const [bottomNavTab, setBottomNavTab] = useState<'home' | 'riders' | 'okada' | 'my-ads'>('home');
+  const [bottomNavTab, setBottomNavTab] = useState<'home' | 'wanted' | 'riders' | 'okada' | 'my-ads'>('home');
 
   // Live Query from Firestore collection "products"
   useEffect(() => {
@@ -184,28 +196,84 @@ function MarketplaceApp() {
     return () => unsubscribe();
   }, []);
 
-  // Filter products
+  // Live Query from Firestore collection "wanted_items" for Student Wanted Board
+  useEffect(() => {
+    setLoadingWanted(true);
+
+    const wantedRef = collection(db, 'wanted_items');
+    let q;
+
+    try {
+      q = query(
+        wantedRef,
+        where('status', '==', 'approved'),
+        orderBy('createdAt', 'desc')
+      );
+    } catch (e) {
+      q = query(wantedRef, where('status', '==', 'approved'));
+    }
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetched: WantedItem[] = [];
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          fetched.push({
+            id: docSnap.id,
+            ...data,
+          } as WantedItem);
+        });
+
+        if (fetched.length > 0) {
+          fetched.sort((a, b) => {
+            const tA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+            const tB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+            return tB - tA;
+          });
+          setWantedItems(fetched);
+        } else {
+          // If fresh collection, populate with realistic authentic student requests
+          setWantedItems(INITIAL_WANTED_REQUESTS);
+        }
+        setLoadingWanted(false);
+      },
+      (error) => {
+        console.warn('Fallback wanted items query:', error.message);
+        setWantedItems(INITIAL_WANTED_REQUESTS);
+        setLoadingWanted(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Filter products for marketplace view
   const filteredProducts = useMemo(() => {
     return products.filter((prod) => {
-      // Don't show rider listings in general merchandise grid if browsing non-riders
+      // Exclude riders from regular marketplace feed
       if (viewMode === 'marketplace' && prod.category === 'Okada Riders Wukari 🏍️') {
         return false;
       }
 
       if (filters.searchQuery) {
-        const qLower = filters.searchQuery.toLowerCase();
-        const matchesTitle = prod.title?.toLowerCase().includes(qLower);
-        const matchesDesc = prod.description?.toLowerCase().includes(qLower);
-        const matchesCat = prod.category?.toLowerCase().includes(qLower);
-        const matchesModel = prod.model?.toLowerCase().includes(qLower);
-        if (!matchesTitle && !matchesDesc && !matchesCat && !matchesModel) return false;
+        const query = filters.searchQuery.toLowerCase();
+        const matchesTitle = prod.title?.toLowerCase().includes(query);
+        const matchesDesc = prod.description?.toLowerCase().includes(query);
+        const matchesCat = prod.category?.toLowerCase().includes(query);
+        const matchesModel = prod.model?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDesc && !matchesCat && !matchesModel) {
+          return false;
+        }
       }
 
       if (filters.category) {
         if (filters.category.toLowerCase().includes('okada riders')) {
           return prod.category === 'Okada Riders Wukari 🏍️';
-        } else if (filters.category.toLowerCase().includes('okada')) {
-          const isOkadaProd =
+        }
+        if (filters.category.toLowerCase().includes('okada')) {
+          const isOkadaProd = 
             prod.isOkada ||
             prod.category?.toLowerCase().includes('okada') ||
             prod.category?.toLowerCase().includes('motorcycle');
@@ -286,6 +354,12 @@ function MarketplaceApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSelectWantedBoard = () => {
+    setViewMode('wanted-board');
+    setBottomNavTab('wanted');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectOkadaCategory = () => {
     setViewMode('marketplace');
     setFilters((prev) => ({
@@ -310,6 +384,18 @@ function MarketplaceApp() {
     setIsPublishOpen(true);
   };
 
+  const handleOpenPostWanted = () => {
+    setIsPostWantedOpen(true);
+  };
+
+  const handleWantedPosted = (newItem: WantedItem) => {
+    setWantedItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
+  };
+
+  const handleIHaveThis = (item: WantedItem) => {
+    setSelectedWantedItem(item);
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f5f5] text-gray-900 flex flex-col font-sans">
       {/* Top Header */}
@@ -328,7 +414,9 @@ function MarketplaceApp() {
         onOpenMyAds={() => setIsMyAdsOpen(true)}
         onSelectOkadaCategory={handleSelectOkadaCategory}
         onSelectWukariRiders={handleSelectWukariRiders}
+        onSelectWantedBoard={handleSelectWantedBoard}
         isWukariRidersActive={viewMode === 'wukari-riders'}
+        isWantedBoardActive={viewMode === 'wanted-board'}
         myAdsCount={myProducts.length}
       />
 
@@ -352,8 +440,15 @@ function MarketplaceApp() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-3 sm:py-5">
-        {/* Toggle between Wukari Riders View and Marketplace View */}
-        {viewMode === 'wukari-riders' ? (
+        {/* Toggle between Wanted Board, Wukari Riders View and Marketplace View */}
+        {viewMode === 'wanted-board' ? (
+          <WantedBoardView
+            wantedItems={wantedItems}
+            loading={loadingWanted}
+            onOpenPostModal={handleOpenPostWanted}
+            onIHaveThis={handleIHaveThis}
+          />
+        ) : viewMode === 'wukari-riders' ? (
           <WukariRidersView
             riders={riders}
             loading={loadingRiders}
@@ -370,13 +465,42 @@ function MarketplaceApp() {
               />
             )}
 
+            {/* Student Wanted Board Callout Banner */}
+            <div 
+              onClick={handleSelectWantedBoard}
+              className="mb-3 bg-gradient-to-r from-emerald-700 via-[#008751] to-emerald-600 p-3 sm:p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-all flex items-center justify-between text-white border border-emerald-500/40"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-yellow-400 text-black flex items-center justify-center font-black text-lg flex-shrink-0 shadow-2xs">
+                  🎯
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-black text-sm sm:text-base leading-tight">
+                      Looking to Buy an Item? Student Wanted Board
+                    </h4>
+                    <span className="hidden sm:inline bg-yellow-400 text-black text-[10px] font-black px-1.5 py-0.2 rounded-full uppercase">
+                      New
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-100 font-medium">
+                    Buyers post what they need with their budget. Sellers in FU Wukari & nationwide call or WhatsApp you directly!
+                  </p>
+                </div>
+              </div>
+              <button className="bg-white hover:bg-emerald-50 text-[#008751] px-3.5 py-2 rounded-xl text-xs font-black flex-shrink-0 flex items-center gap-1 transition-colors shadow-2xs">
+                <span>Open Board</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {/* Quick Wukari Riders Banner Callout */}
             <div 
               onClick={handleSelectWukariRiders}
               className="mb-4 bg-gradient-to-r from-yellow-400 via-orange-400 to-[#fb6514] p-3 sm:p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-all flex items-center justify-between text-black"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-black text-yellow-300 flex items-center justify-center font-bold text-lg">
+                <div className="w-10 h-10 rounded-xl bg-black text-yellow-300 flex items-center justify-center font-bold text-lg flex-shrink-0">
                   🏍️
                 </div>
                 <div>
@@ -450,16 +574,23 @@ function MarketplaceApp() {
                     <PlusCircle className="w-4 h-4" />
                     <span>Post an Okada or Product</span>
                   </button>
+
+                  <button
+                    onClick={handleSelectWantedBoard}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-[#008751] rounded-xl text-xs font-bold border border-emerald-200 transition-colors"
+                  >
+                    Check Wanted Board 🎯
+                  </button>
                 </div>
               </div>
             ) : (
-              /* Product Grid */
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((prod) => (
                   <ProductCard
-                    key={product.id}
-                    product={product}
-                    onClick={() => setSelectedProduct(product)}
+                    key={prod.id}
+                    product={prod}
+                    onClick={() => setSelectedProduct(prod)}
+                    onBargainClick={(p) => setBargainProduct(p)}
                   />
                 ))}
               </div>
@@ -468,7 +599,7 @@ function MarketplaceApp() {
         )}
       </main>
 
-      {/* Professional Footer */}
+      {/* Footer */}
       <Footer
         onSelectCategory={(cat) => {
           if (cat.toLowerCase().includes('okada riders')) {
@@ -485,7 +616,7 @@ function MarketplaceApp() {
         onOpenPublish={(isOkada) => handleOpenPublish(isOkada ?? false)}
       />
 
-      {/* Mobile Bottom Navigation */}
+      {/* Bottom Navigation for Mobile */}
       <BottomNav
         onHomeClick={() => {
           setViewMode('marketplace');
@@ -493,6 +624,7 @@ function MarketplaceApp() {
           setBottomNavTab('home');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        onWantedClick={handleSelectWantedBoard}
         onWukariRidersClick={handleSelectWukariRiders}
         onOkadaClick={handleSelectOkadaCategory}
         onPostAdClick={() => handleOpenPublish(false)}
@@ -526,11 +658,31 @@ function MarketplaceApp() {
         }}
       />
 
+      {/* Wanted Board Modals */}
+      <PostWantedModal
+        isOpen={isPostWantedOpen}
+        onClose={() => setIsPostWantedOpen(false)}
+        onWantedPosted={handleWantedPosted}
+      />
+
+      <IHaveThisModal
+        item={selectedWantedItem}
+        onClose={() => setSelectedWantedItem(null)}
+      />
+
       <ProductDetailsModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onSelectRelatedProduct={(rel) => setSelectedProduct(rel)}
         allProducts={products}
+        onOpenBargainChat={(p) => setBargainProduct(p)}
+      />
+
+      {/* Bargain Chat Modal (WhatsApp Style) */}
+      <BargainChatModal
+        product={bargainProduct}
+        isOpen={!!bargainProduct}
+        onClose={() => setBargainProduct(null)}
       />
 
       <MyAdsModal

@@ -22,7 +22,9 @@ interface HeaderProps {
   onOpenMyAds: () => void;
   onSelectOkadaCategory: () => void;
   onSelectWukariRiders: () => void;
+  onSelectWantedBoard: () => void;
   isWukariRidersActive?: boolean;
+  isWantedBoardActive?: boolean;
   myAdsCount: number;
 }
 
@@ -35,7 +37,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMyAds,
   onSelectOkadaCategory,
   onSelectWukariRiders,
+  onSelectWantedBoard,
   isWukariRidersActive = false,
+  isWantedBoardActive = false,
   myAdsCount,
 }) => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -47,23 +51,36 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="bg-gradient-to-r from-[#fb6514] via-[#e8590c] to-[#008751] text-white text-[11px] sm:text-xs py-1.5 px-3 font-semibold">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-              <Zap className="w-3 h-3 text-yellow-300 fill-yellow-300" /> Wukari Special
-            </span>
-            <span className="truncate">NaijaMarket Hub: Jumia + Temu + Okada Market • Free Base64 • Direct Calls</span>
+            <button 
+              onClick={onSelectWantedBoard}
+              className="bg-yellow-400 text-black hover:bg-yellow-300 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-colors shadow-2xs"
+            >
+              <Zap className="w-3 h-3 text-black fill-black" /> 🎯 Student Wanted Board
+            </button>
+            <span className="truncate hidden sm:inline">Buyers post what they need • Sellers call & WhatsApp direct</span>
           </div>
-          <div className="hidden sm:flex items-center gap-3 text-[11px]">
+          <div className="flex items-center gap-2 sm:gap-3 text-[11px]">
+            <button 
+              onClick={onSelectWantedBoard}
+              className={`px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors ${
+                isWantedBoardActive
+                  ? 'bg-white text-[#008751]'
+                  : 'bg-emerald-900/40 text-emerald-100 hover:bg-emerald-800/60'
+              }`}
+            >
+              <span>🎯 Wanted Board</span>
+            </button>
             <button 
               onClick={onSelectWukariRiders}
-              className="bg-yellow-400 text-black hover:bg-yellow-300 px-2.5 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors shadow-2xs"
+              className="bg-yellow-400 text-black hover:bg-yellow-300 px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors shadow-2xs"
             >
-              <Users className="w-3 h-3 text-black" /> 🏍️ Wukari Okada Riders
+              <Users className="w-3 h-3 text-black" /> 🏍️ Riders
             </button>
             <button 
               onClick={onSelectOkadaCategory}
-              className="bg-white text-[#fb6514] hover:bg-orange-50 px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors"
+              className="hidden md:flex bg-white text-[#fb6514] hover:bg-orange-50 px-2 py-0.5 rounded-md font-black items-center gap-1 transition-colors"
             >
-              <Bike className="w-3 h-3" /> Okada Market
+              <Bike className="w-3 h-3" /> Okadas
             </button>
           </div>
         </div>
@@ -167,6 +184,19 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Toggle search"
           >
             <Search className="w-5 h-5" />
+          </button>
+
+          {/* Wanted Board Button */}
+          <button
+            onClick={onSelectWantedBoard}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black shadow-xs transition-colors border ${
+              isWantedBoardActive
+                ? 'bg-[#008751] text-white border-emerald-600 ring-2 ring-emerald-200'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-[#008751] border-emerald-200'
+            }`}
+          >
+            <span className="text-sm">🎯</span>
+            <span>Wanted Board</span>
           </button>
 
           {/* Wukari Okada Riders Button */}

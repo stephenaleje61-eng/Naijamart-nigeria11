@@ -14,7 +14,9 @@ import {
   FileCheck,
   CheckCircle2,
   Eye,
-  Flame
+  Flame,
+  Handshake,
+  Tag
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
@@ -25,6 +27,7 @@ interface ProductDetailsModalProps {
   onClose: () => void;
   onSelectRelatedProduct: (product: Product) => void;
   allProducts: Product[];
+  onOpenBargainChat?: (product: Product) => void;
 }
 
 export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
@@ -32,6 +35,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   onClose,
   onSelectRelatedProduct,
   allProducts,
+  onOpenBargainChat,
 }) => {
   const { showToast } = useToast();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -184,9 +188,23 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   {product.title}
                 </h1>
 
-                {/* Large Green Price */}
-                <div className="text-2xl sm:text-3xl font-black text-[#008751] mt-2 tracking-tight">
-                  {formatNaira(product.price)}
+                {/* Large Green Price with Original Price Strikethrough */}
+                <div className="flex items-baseline gap-2.5 mt-2 flex-wrap">
+                  <span className="text-2xl sm:text-3xl font-black text-[#008751] tracking-tight">
+                    {formatNaira(product.price)}
+                  </span>
+                  <span className="text-sm sm:text-base text-gray-400 line-through font-semibold">
+                    {formatNaira(product.originalPrice || Math.round((product.price * 1.18) / 500) * 500)}
+                  </span>
+                  {onOpenBargainChat && (
+                    <button
+                      onClick={() => onOpenBargainChat(product)}
+                      className="bg-emerald-100 hover:bg-emerald-200 text-[#008751] text-xs font-black px-2.5 py-1 rounded-full border border-emerald-300 flex items-center gap-1 transition-all"
+                    >
+                      <Handshake className="w-3.5 h-3.5 text-[#008751]" />
+                      <span>Negotiable • Bargain</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Badges: Condition, Location, Papers */}
@@ -222,7 +240,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 </div>
               </div>
 
-              {/* Seller Contact Card with 2 BIG ACTION BUTTONS */}
+              {/* Seller Contact Card with BARGAIN CHAT & ACTION BUTTONS */}
               <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 rounded-full bg-[#008751] text-white font-black flex items-center justify-center text-lg shadow-xs">
@@ -244,8 +262,18 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   </div>
                 </div>
 
-                {/* 2 BIG ACTION BUTTONS */}
-                <div className="flex flex-col gap-2.5 mt-2">
+                {/* 3 ACTION BUTTONS: Bargain Chat, Call, WhatsApp */}
+                <div className="flex flex-col gap-2 mt-2">
+                  {/* Bargain Chat Button (WhatsApp Style) */}
+                  {onOpenBargainChat && (
+                    <button
+                      onClick={() => onOpenBargainChat(product)}
+                      className="w-full bg-gradient-to-r from-emerald-600 via-[#008751] to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 border border-emerald-500"
+                    >
+                      <Handshake className="w-4 h-4 text-yellow-300" />
+                      <span>Bargain Chat (Offer Your Price) 💬</span>
+                    </button>
+                  )}
                   {/* Big Call Button */}
                   {cleanPhone ? (
                     <a

@@ -1,16 +1,18 @@
 import React from 'react';
-import { MapPin, ShieldCheck, Phone, MessageSquare, Flame, CheckCircle, FileText } from 'lucide-react';
+import { MapPin, ShieldCheck, Phone, MessageSquare, Flame, CheckCircle, FileText, Handshake } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
+  onBargainClick?: (product: Product) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
+  onBargainClick,
 }) => {
   const isOkada =
     product.isOkada ||
@@ -145,17 +147,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* 2 BIG ACTION BUTTONS: Call & WhatsApp */}
-      <div className="p-2.5 pt-0 grid grid-cols-2 gap-2 mt-1">
-        {/* Call Button */}
-        <a
-          href={`tel:${cleanPhone}`}
-          onClick={(e) => e.stopPropagation()}
-          className="bg-gray-900 hover:bg-black text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
-        >
-          <Phone className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Call Seller</span>
-        </a>
+      {/* Action Buttons: Bargain Offer + Call + WhatsApp */}
+      <div className="p-2.5 pt-0 space-y-1.5 mt-1">
+        {onBargainClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onBargainClick(product);
+            }}
+            className="w-full bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-300 py-1.5 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors shadow-2xs active:scale-98"
+          >
+            <Handshake className="w-3.5 h-3.5 text-[#008751]" />
+            <span>🤝 Bargain Offer</span>
+          </button>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          {/* Call Button */}
+          <a
+            href={`tel:${cleanPhone}`}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-gray-900 hover:bg-black text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
+          >
+            <Phone className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Call Seller</span>
+          </a>
 
         {/* WhatsApp Button */}
         <a
@@ -174,5 +190,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </a>
       </div>
     </div>
-  );
+  </div>
+);
 };
