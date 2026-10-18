@@ -15,6 +15,8 @@ import {
 import { WantedItem } from '../types';
 import { formatNaira } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
+import { useStudent } from '../context/StudentContext';
+import { UserPlus } from 'lucide-react';
 
 interface IHaveThisModalProps {
   item: WantedItem | null;
@@ -23,6 +25,7 @@ interface IHaveThisModalProps {
 
 export const IHaveThisModal: React.FC<IHaveThisModalProps> = ({ item, onClose }) => {
   const { showToast } = useToast();
+  const { openPrivateChatWith, sendFriendRequest } = useStudent();
 
   if (!item) return null;
 
@@ -110,7 +113,43 @@ export const IHaveThisModal: React.FC<IHaveThisModalProps> = ({ item, onClose })
             )}
           </div>
 
-          {/* Action 1: WhatsApp Chat (Primary) */}
+          {/* Action 1: Private Chat inside Marketplace (Real-Time) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                const targetBuyerId = item.buyerId || ('buyer_' + (item.buyerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+                onClose();
+                openPrivateChatWith({
+                  id: targetBuyerId,
+                  fullName: item.buyerName,
+                  campus: item.school || 'FU Wukari',
+                  phone: cleanPhone,
+                });
+              }}
+              className="bg-[#008751] hover:bg-[#007043] active:scale-98 text-white py-3 px-4 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Private Chat Inside App 💬</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const targetBuyerId = item.buyerId || ('buyer_' + (item.buyerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+                sendFriendRequest({
+                  id: targetBuyerId,
+                  name: item.buyerName,
+                  campus: item.school || 'FU Wukari',
+                  phone: cleanPhone,
+                });
+              }}
+              className="bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-300 py-3 px-4 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs transition-all"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Connect / Add Friend</span>
+            </button>
+          </div>
+
+          {/* Action 2: WhatsApp Chat */}
           <a
             href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(defaultWhatsappMessage)}`}
             target="_blank"
@@ -121,7 +160,7 @@ export const IHaveThisModal: React.FC<IHaveThisModalProps> = ({ item, onClose })
             <span>Chat Buyer on WhatsApp Now</span>
           </a>
 
-          {/* Action 2: Direct Phone Call */}
+          {/* Action 3: Direct Phone Call */}
           <div className="flex items-center gap-2">
             <a
               href={`tel:${cleanPhone}`}

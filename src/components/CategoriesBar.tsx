@@ -15,11 +15,13 @@ import { CATEGORIES } from '../data/constants';
 interface CategoriesBarProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
+  onSelectSquatterBoard?: () => void;
 }
 
 export const CategoriesBar: React.FC<CategoriesBarProps> = ({
   selectedCategory,
   onSelectCategory,
+  onSelectSquatterBoard,
 }) => {
   const getIcon = (name: string) => {
     switch (name) {
@@ -48,6 +50,24 @@ export const CategoriesBar: React.FC<CategoriesBarProps> = ({
     <div className="bg-white border-b border-gray-200 py-2.5 px-3 sm:px-4 shadow-2xs">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          {/* First Category: Big Green Button linking to /squatter */}
+          <a
+            href="/squatter"
+            onClick={(e) => {
+              if (onSelectSquatterBoard) {
+                e.preventDefault();
+                onSelectSquatterBoard();
+              }
+            }}
+            className="flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition-all flex-shrink-0 shadow-sm border border-emerald-500 bg-gradient-to-r from-[#008751] via-[#049b5d] to-[#008751] text-white hover:brightness-110 active:scale-95 ring-2 ring-emerald-300"
+          >
+            <span className="text-sm sm:text-base">🏠</span>
+            <span>FUW Squatter Board - Find Bedspace FREE</span>
+            <span className="text-[10px] bg-yellow-400 text-black px-1.5 py-0.2 rounded-md font-black tracking-wider uppercase shadow-2xs">
+              HOT
+            </span>
+          </a>
+
           {/* All Categories Option */}
           <button
             onClick={() => onSelectCategory('')}

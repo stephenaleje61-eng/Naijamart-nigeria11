@@ -16,6 +16,7 @@ import { db } from '../firebase';
 import { CATEGORIES, OKADA_MODELS, NIGERIAN_LOCATIONS } from '../data/constants';
 import { Product } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useStudent } from '../context/StudentContext';
 
 interface PublishModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   defaultIsOkada = false,
 }) => {
   const { showToast } = useToast();
+  const { profile } = useStudent();
 
   const [isOkadaMode, setIsOkadaMode] = useState(defaultIsOkada);
 
@@ -42,10 +44,10 @@ export const PublishModal: React.FC<PublishModalProps> = ({
   const [papers, setPapers] = useState<'Complete' | 'Incomplete' | 'N/A'>('Complete');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('Wukari, Taraba State');
-  const [sellerName, setSellerName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [location, setLocation] = useState(profile?.campus || 'Wukari, Taraba State');
+  const [sellerName, setSellerName] = useState(profile?.fullName || '');
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber || '');
+  const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phoneNumber || '');
 
   // Primary Base64 Image and additional gallery images
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -208,6 +210,8 @@ export const PublishModal: React.FC<PublishModalProps> = ({
         imageUrl: imageUrl, // base64 string
         location,
         sellerName: sellerName.trim() || 'Verified Seller',
+        sellerId: profile?.id || ('std_' + Math.random().toString(36).substring(2, 9)),
+        sellerCampus: profile?.campus || location,
         phoneNumber: phoneNumber.trim(),
         whatsappNumber: whatsappNumber.trim(),
         status: 'approved' as const,

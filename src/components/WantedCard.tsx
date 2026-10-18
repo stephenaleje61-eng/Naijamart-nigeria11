@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { WantedItem } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
+import { useStudent } from '../context/StudentContext';
 
 interface WantedCardProps {
   item: WantedItem;
@@ -28,6 +29,7 @@ export const WantedCard: React.FC<WantedCardProps> = ({
   onIHaveThis,
   onShare,
 }) => {
+  const { openPrivateChatWith, sendFriendRequest } = useStudent();
   const cleanPhone = item.phoneNumber?.replace(/[^0-9+]/g, '') || '';
   const cleanWhatsapp = item.whatsappNumber?.replace(/[^0-9]/g, '') || cleanPhone;
   const formattedWhatsapp = cleanWhatsapp.startsWith('0')
@@ -188,8 +190,24 @@ export const WantedCard: React.FC<WantedCardProps> = ({
 
       {/* Card Action Footer: Big Green "I Have This" + Direct Contact */}
       <div className="pt-2 flex items-center justify-between gap-2">
-        {/* Direct Call / WhatsApp Quick Buttons */}
+        {/* Direct Call / WhatsApp / In-app Chat Quick Buttons */}
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => {
+              const targetBuyerId = item.buyerId || ('buyer_' + (item.buyerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+              openPrivateChatWith({
+                id: targetBuyerId,
+                fullName: item.buyerName,
+                campus: item.school || 'FU Wukari',
+                phone: cleanPhone,
+              });
+            }}
+            title="Private Chat Inside App"
+            className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-200 flex items-center justify-center transition-colors shadow-2xs font-bold"
+          >
+            <MessageSquare className="w-4 h-4 text-[#008751]" />
+          </button>
+
           <a
             href={`tel:${cleanPhone}`}
             title="Call Buyer Directly"

@@ -116,101 +116,72 @@ export const CAMPUS_LOCATIONS_WUKARI = [
   'Yam Market Road'
 ];
 
-export const INITIAL_WANTED_REQUESTS = [
+export const INITIAL_WANTED_REQUESTS = [];
+
+export const SQUATTER_LOCATIONS = [
+  'Hostel A',
+  'Hostel B',
+  'New Site',
+  'Wukari Town'
+];
+
+export const INITIAL_SQUATTER_ITEMS = [
   {
-    id: 'seed-w-1',
-    buyerName: 'Ibrahim Danladi',
-    school: 'Federal University Wukari (FU Wukari)',
-    location: 'FUW School Gate',
-    itemWanted: 'iPhone X or XR under 120k',
-    budget: 120000,
-    budgetType: 'up_to' as const,
-    urgency: 'Urgent' as const,
-    category: 'Phones & Gadgets',
-    description: 'Looking for clean UK used, 64GB or 128GB with Face ID working. Battery health 80%+. Cash ready, will test at School Gate.',
-    phoneNumber: '08034567891',
-    whatsappNumber: '08034567891',
-    status: 'approved' as const,
-    createdAt: new Date(Date.now() - 35 * 60 * 1000), // 35m ago
+    id: 'sq_fuw_001',
+    type: 'have_space' as const,
+    location: 'Hostel A',
+    price: 45000,
+    gender: 'male' as const,
+    people_in_room: '2 people in room',
+    whatsapp: '08134567890',
+    images: [
+      'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80'
+    ],
+    description: 'Clean bedspace available in FUW Male Hostel A, Block 2. Water running regularly, quiet room for serious study. Wardrobe and reading desk ready.',
+    is_verified: true,
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
   },
   {
-    id: 'seed-w-2',
-    buyerName: 'Chiamaka Okonkwo',
-    school: 'Federal University Wukari (FU Wukari)',
-    location: 'FUW Female Hostel',
-    itemWanted: 'Mini Tabletop Fridge / Refrigerator',
-    budget: 65000,
-    budgetType: 'negotiable' as const,
-    urgency: 'This Week' as const,
-    category: 'Hostel Appliances & Furniture',
-    description: 'Need a small working fridge for hostel room to keep water and cooked soup chilled. Any brand (Haier Thermocool, Hisense, or Nexus).',
-    phoneNumber: '08123456782',
-    whatsappNumber: '08123456782',
-    status: 'approved' as const,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2h ago
+    id: 'sq_fuw_002',
+    type: 'have_space' as const,
+    location: 'Hostel B',
+    price: 50000,
+    gender: 'female' as const,
+    people_in_room: '2 people in room',
+    whatsapp: '08023456781',
+    images: [
+      'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80'
+    ],
+    description: 'Bedspace available in FUW Female Hostel B. Very tidy room, friendly roommates, tiled floor with full security and constant power supply.',
+    is_verified: true,
+    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
   },
   {
-    id: 'seed-w-3',
-    buyerName: 'Bala Mohammed',
-    school: 'Federal University Wukari (FU Wukari)',
-    location: 'FUW Male Hostel Block B',
-    itemWanted: 'Single 4.5x6 Mouka Foam / Student Mattress',
-    budget: 35000,
-    budgetType: 'fixed' as const,
-    urgency: 'Urgent' as const,
-    category: 'Hostel Appliances & Furniture',
-    description: 'Need a clean 4.5x6 or 3x6 student foam mattress. No sagged or torn mattress please. I can arrange an Okada to pick up immediately.',
-    phoneNumber: '07031234567',
-    whatsappNumber: '07031234567',
-    status: 'approved' as const,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5h ago
+    id: 'sq_fuw_003',
+    type: 'need_space' as const,
+    location: 'New Site',
+    price: 40000,
+    gender: 'male' as const,
+    people_in_room: '1 or 2',
+    whatsapp: '09012345672',
+    images: [],
+    description: '300L Science student urgently looking for a bedspace around FUW New Site. Ready to pay immediately. Non-smoker and quiet.',
+    is_verified: true,
+    created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
   },
   {
-    id: 'seed-w-4',
-    buyerName: 'Blessing Jerry',
-    school: 'Kwararafa University Wukari',
-    location: 'Kwararafa Univ Campus Gate',
-    itemWanted: 'Rechargeable Standing Fan (Lontor / QASA)',
-    budget: 25000,
-    budgetType: 'up_to' as const,
-    urgency: 'Urgent' as const,
-    category: 'Hostel Appliances & Furniture',
-    description: 'Looking for a durable rechargeable fan with solar charging or good battery backup. Must hold charge for at least 4 hours.',
-    phoneNumber: '08055678901',
-    whatsappNumber: '08055678901',
-    status: 'approved' as const,
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8h ago
-  },
-  {
-    id: 'seed-w-5',
-    buyerName: 'Emmanuel Audu',
-    school: 'Federal University Wukari (FU Wukari)',
-    location: 'FUW New Site Campus',
-    itemWanted: 'MTH 101, CHM 101 & PHY 101 Textbooks & Past Qs',
-    budget: 15000,
-    budgetType: 'fixed' as const,
-    urgency: 'This Week' as const,
-    category: 'Textbooks & Academics',
-    description: '100L science student looking for clean past questions with solutions and course textbooks. Ready to meet at FUW Library.',
-    phoneNumber: '09087654321',
-    whatsappNumber: '09087654321',
-    status: 'approved' as const,
-    createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000), // 14h ago
-  },
-  {
-    id: 'seed-w-6',
-    buyerName: 'Kelechi Eze',
-    school: 'University of Lagos (UNILAG)',
-    location: 'New Hall / Jaja Hall',
-    itemWanted: '6kg Gas Cylinder with Burner Head',
-    budget: 22000,
-    budgetType: 'up_to' as const,
-    urgency: 'This Week' as const,
-    category: 'Food, Provisions & Gas',
-    description: 'Standard 6kg camping cylinder with burner collar and lighter. No leaks, strictly safe cylinder.',
-    phoneNumber: '08169876543',
-    whatsappNumber: '08169876543',
-    status: 'approved' as const,
-    createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000), // 20h ago
+    id: 'sq_fuw_004',
+    type: 'have_space' as const,
+    location: 'Wukari Town',
+    price: 65000,
+    gender: 'any' as const,
+    people_in_room: 'Self-contain sharing',
+    whatsapp: '07034567893',
+    images: [
+      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80'
+    ],
+    description: 'Spacious self-contain off-campus along Hospital Road Wukari Town. Fenced with gate, running borehole water, generator connection. Looking for roommate to split.',
+    is_verified: true,
+    created_at: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString()
   }
 ];

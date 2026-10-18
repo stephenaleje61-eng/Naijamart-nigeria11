@@ -16,11 +16,14 @@ import {
   Eye,
   Flame,
   Handshake,
-  Tag
+  Tag,
+  UserPlus,
+  Users
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
+import { useStudent } from '../context/StudentContext';
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -38,6 +41,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   onOpenBargainChat,
 }) => {
   const { showToast } = useToast();
+  const { openPrivateChatWith, sendFriendRequest } = useStudent();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   if (!product) return null;
@@ -274,6 +278,50 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       <span>Bargain Chat (Offer Your Price) 💬</span>
                     </button>
                   )}
+
+                  {/* Student Network Actions: Private Chat & Add Friend */}
+                  <div className="grid grid-cols-2 gap-2 mt-0.5">
+                    <button
+                      onClick={() => {
+                        const sellerId = (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+                        openPrivateChatWith(
+                          {
+                            id: sellerId,
+                            fullName: product.sellerName || 'Verified Seller',
+                            campus: product.location || 'FU Wukari',
+                            phone: cleanPhone,
+                          },
+                          {
+                            id: product.id,
+                            title: product.title,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                          }
+                        );
+                        onClose();
+                      }}
+                      className="bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-300 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Private Chat</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const sellerId = (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+                        sendFriendRequest({
+                          id: sellerId,
+                          name: product.sellerName || 'Verified Seller',
+                          campus: product.location || 'FU Wukari',
+                          phone: cleanPhone,
+                        });
+                      }}
+                      className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-[#008751]" />
+                      <span>Add Friend</span>
+                    </button>
+                  </div>
                   {/* Big Call Button */}
                   {cleanPhone ? (
                     <a

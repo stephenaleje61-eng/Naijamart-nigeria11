@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { ToastProvider, useToast } from './context/ToastContext';
+import { StudentProvider, useStudent } from './context/StudentContext';
 import { Header } from './components/Header';
 import { CategoriesBar } from './components/CategoriesBar';
 import { HeroBanner } from './components/HeroBanner';
@@ -22,14 +23,21 @@ import { WantedBoardView } from './components/WantedBoardView';
 import { PostWantedModal } from './components/PostWantedModal';
 import { IHaveThisModal } from './components/IHaveThisModal';
 import { BargainChatModal } from './components/BargainChatModal';
+import { FriendsModal } from './components/FriendsModal';
+import { PrivateChatModal } from './components/PrivateChatModal';
+import { StudentProfileModal } from './components/StudentProfileModal';
+import { SquatterBoardView } from './components/SquatterBoardView';
+import { PostSquatterModal } from './components/PostSquatterModal';
 import { BottomNav } from './components/BottomNav';
 import { Footer } from './components/Footer';
-import { Product, FilterState, OkadaRider, WantedItem } from './types';
-import { INITIAL_WANTED_REQUESTS } from './data/constants';
-import { ShoppingBag, PlusCircle, Bike, Users, Sparkles, ArrowRight } from 'lucide-react';
+import { Product, FilterState, OkadaRider, WantedItem, SquatterItem } from './types';
+import { INITIAL_WANTED_REQUESTS, INITIAL_SQUATTER_ITEMS } from './data/constants';
+import { subscribeToSquatterBoard } from './services/squatterService';
+import { ShoppingBag, PlusCircle, Bike, Users, Sparkles, ArrowRight, MessageSquare, X, Home } from 'lucide-react';
 
 function MarketplaceApp() {
   const { showToast } = useToast();
+  const { latestIncomingMessage, clearLatestIncomingMessage, openPrivateChatWith } = useStudent();
 
   // Products state
   const [products, setProducts] = useState<Product[]>([]);
@@ -45,8 +53,21 @@ function MarketplaceApp() {
   const [isPostWantedOpen, setIsPostWantedOpen] = useState(false);
   const [selectedWantedItem, setSelectedWantedItem] = useState<WantedItem | null>(null);
 
-  // Active page view mode: 'marketplace' | 'wukari-riders' | 'wanted-board'
-  const [viewMode, setViewMode] = useState<'marketplace' | 'wukari-riders' | 'wanted-board'>('marketplace');
+  // Squatter Board state (FUW Wukari Bedspaces)
+  const [squatterItems, setSquatterItems] = useState<SquatterItem[]>(INITIAL_SQUATTER_ITEMS as SquatterItem[]);
+  const [loadingSquatter, setLoadingSquatter] = useState(false);
+  const [isPostSquatterOpen, setIsPostSquatterOpen] = useState(false);
+
+  // Active page view mode: 'marketplace' | 'wukari-riders' | 'wanted-board' | 'squatter-board'
+  const [viewMode, setViewMode] = useState<'marketplace' | 'wukari-riders' | 'wanted-board' | 'squatter-board'>(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname;
+      if (p === '/squatter' || p.startsWith('/squatter')) return 'squatter-board';
+      if (p === '/wanted' || p.startsWith('/wanted')) return 'wanted-board';
+      if (p === '/riders' || p.startsWith('/riders')) return 'wukari-riders';
+    }
+    return 'marketplace';
+  });
 
   // Filters state
   const [filters, setFilters] = useState<FilterState>({
@@ -249,6 +270,39 @@ function MarketplaceApp() {
     return () => unsubscribe();
   }, []);
 
+  // Live Query / Subscription for Squatter Board (Bedspaces)
+  useEffect(() => {
+    setLoadingSquatter(true);
+    const unsubscribe = subscribeToSquatterBoard((data) => {
+      setSquatterItems(data);
+      setLoadingSquatter(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Browser Route / URL synchronization (/squatter, /wanted, /riders, /)
+  useEffect(() => {
+    const handleRoute = () => {
+      const path = window.location.pathname;
+      if (path === '/squatter' || path.startsWith('/squatter')) {
+        setViewMode('squatter-board');
+        setBottomNavTab('squatter');
+      } else if (path === '/wanted' || path.startsWith('/wanted')) {
+        setViewMode('wanted-board');
+        setBottomNavTab('wanted');
+      } else if (path === '/riders' || path.startsWith('/riders')) {
+        setViewMode('wukari-riders');
+        setBottomNavTab('riders');
+      } else {
+        setViewMode('marketplace');
+      }
+    };
+
+    handleRoute();
+    window.addEventListener('popstate', handleRoute);
+    return () => window.removeEventListener('popstate', handleRoute);
+  }, []);
+
   // Filter products for marketplace view
   const filteredProducts = useMemo(() => {
     return products.filter((prod) => {
@@ -347,16 +401,41 @@ function MarketplaceApp() {
     });
   };
 
+  const handleSelectSquatterBoard = () => {
+    setViewMode('squatter-board');
+    setBottomNavTab('squatter');
+    if (window.location.pathname !== '/squatter') {
+      window.history.pushState({}, '', '/squatter');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectWukariRiders = () => {
     setViewMode('wukari-riders');
     setBottomNavTab('riders');
     setFilters((prev) => ({ ...prev, category: 'Okada Riders Wukari 🏍️' }));
+    if (window.location.pathname !== '/riders') {
+      window.history.pushState({}, '', '/riders');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectWantedBoard = () => {
     setViewMode('wanted-board');
     setBottomNavTab('wanted');
+    if (window.location.pathname !== '/wanted') {
+      window.history.pushState({}, '', '/wanted');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectMarketplace = () => {
+    setViewMode('marketplace');
+    setBottomNavTab('home');
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
+    handleResetFilters();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -368,6 +447,9 @@ function MarketplaceApp() {
       searchQuery: '',
     }));
     setBottomNavTab('okada');
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
     window.scrollTo({ top: 180, behavior: 'smooth' });
   };
 
@@ -415,14 +497,17 @@ function MarketplaceApp() {
         onSelectOkadaCategory={handleSelectOkadaCategory}
         onSelectWukariRiders={handleSelectWukariRiders}
         onSelectWantedBoard={handleSelectWantedBoard}
+        onSelectSquatterBoard={handleSelectSquatterBoard}
         isWukariRidersActive={viewMode === 'wukari-riders'}
         isWantedBoardActive={viewMode === 'wanted-board'}
+        isSquatterBoardActive={viewMode === 'squatter-board'}
         myAdsCount={myProducts.length}
       />
 
       {/* Horizontal Categories Bar */}
       <CategoriesBar
         selectedCategory={filters.category}
+        onSelectSquatterBoard={handleSelectSquatterBoard}
         onSelectCategory={(cat) => {
           if (cat.toLowerCase().includes('okada riders')) {
             handleSelectWukariRiders();
@@ -440,8 +525,15 @@ function MarketplaceApp() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 py-3 sm:py-5">
-        {/* Toggle between Wanted Board, Wukari Riders View and Marketplace View */}
-        {viewMode === 'wanted-board' ? (
+        {/* Toggle between Squatter Board, Wanted Board, Wukari Riders View and Marketplace View */}
+        {viewMode === 'squatter-board' ? (
+          <SquatterBoardView
+            items={squatterItems}
+            loading={loadingSquatter}
+            onOpenPostModal={() => setIsPostSquatterOpen(true)}
+            onNavigateHome={handleSelectMarketplace}
+          />
+        ) : viewMode === 'wanted-board' ? (
           <WantedBoardView
             wantedItems={wantedItems}
             loading={loadingWanted}
@@ -464,6 +556,35 @@ function MarketplaceApp() {
                 onSearchChange={(q) => setFilters((prev) => ({ ...prev, searchQuery: q }))}
               />
             )}
+
+            {/* Squatter Board Callout Banner on Marketplace */}
+            <div 
+              onClick={handleSelectSquatterBoard}
+              className="mb-3 bg-gradient-to-r from-[#008751] via-emerald-600 to-[#049b5d] p-3 sm:p-4 rounded-2xl shadow-sm cursor-pointer hover:shadow-md transition-all flex items-center justify-between text-white border border-emerald-400/50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-yellow-400 text-black flex items-center justify-center font-black text-lg flex-shrink-0 shadow-2xs">
+                  🏠
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-black text-sm sm:text-base leading-tight">
+                      FUW Squatter Board - Find Bedspace & Roommates FREE
+                    </h4>
+                    <span className="hidden sm:inline bg-yellow-400 text-black text-[10px] font-black px-1.5 py-0.2 rounded-full uppercase">
+                      New
+                    </span>
+                  </div>
+                  <p className="text-xs text-emerald-100 font-medium">
+                    Sublet your bedspace or find a squatter slot in Hostel A, Hostel B, New Site or Wukari Town. No agent fees!
+                  </p>
+                </div>
+              </div>
+              <button className="bg-white hover:bg-emerald-50 text-[#008751] px-3.5 py-2 rounded-xl text-xs font-black flex-shrink-0 flex items-center gap-1 transition-colors shadow-2xs">
+                <span>Find Bedspace</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
             {/* Student Wanted Board Callout Banner */}
             <div 
@@ -622,9 +743,13 @@ function MarketplaceApp() {
           setViewMode('marketplace');
           handleResetFilters();
           setBottomNavTab('home');
+          if (window.location.pathname !== '/') {
+            window.history.pushState({}, '', '/');
+          }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onWantedClick={handleSelectWantedBoard}
+        onSquatterClick={handleSelectSquatterBoard}
         onWukariRidersClick={handleSelectWukariRiders}
         onOkadaClick={handleSelectOkadaCategory}
         onPostAdClick={() => handleOpenPublish(false)}
@@ -633,7 +758,7 @@ function MarketplaceApp() {
           setIsMyAdsOpen(true);
         }}
         myAdsCount={myProducts.length}
-        activeTab={bottomNavTab}
+        activeTab={bottomNavTab as any}
       />
 
       {/* Modals */}
@@ -670,6 +795,15 @@ function MarketplaceApp() {
         onClose={() => setSelectedWantedItem(null)}
       />
 
+      {/* Squatter Board Post Modal */}
+      <PostSquatterModal
+        isOpen={isPostSquatterOpen}
+        onClose={() => setIsPostSquatterOpen(false)}
+        onPostCreated={(newItem) => {
+          setSquatterItems((prev) => [newItem, ...prev.filter((i) => i.id !== newItem.id)]);
+        }}
+      />
+
       <ProductDetailsModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
@@ -696,6 +830,51 @@ function MarketplaceApp() {
         onOpenPublish={() => handleOpenPublish(false)}
         onAdDeleted={handleAdDeleted}
       />
+
+      {/* Floating Real-Time Incoming Message Alert Banner */}
+      {latestIncomingMessage && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md bg-gradient-to-r from-[#008751] to-emerald-700 text-white p-3 rounded-2xl shadow-2xl border-2 border-emerald-300 flex items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-white text-[#008751] font-black flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+              💬
+            </div>
+            <div className="min-w-0">
+              <span className="font-black text-xs block leading-tight text-yellow-300">
+                New Message from {latestIncomingMessage.senderName}!
+              </span>
+              <p className="text-[11px] text-emerald-100 truncate">
+                "{latestIncomingMessage.text}"
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              onClick={() => {
+                openPrivateChatWith({
+                  id: latestIncomingMessage.partnerId,
+                  fullName: latestIncomingMessage.partnerName,
+                  campus: latestIncomingMessage.partnerCampus,
+                  phone: latestIncomingMessage.partnerPhone,
+                });
+              }}
+              className="bg-yellow-400 hover:bg-yellow-300 active:scale-95 text-black font-black text-xs px-2.5 py-1 rounded-xl shadow-xs transition-colors"
+            >
+              Reply
+            </button>
+            <button
+              onClick={clearLatestIncomingMessage}
+              className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Student Network & Private Chat Modals */}
+      <FriendsModal />
+      <PrivateChatModal />
+      <StudentProfileModal />
     </div>
   );
 }
@@ -703,7 +882,9 @@ function MarketplaceApp() {
 export default function App() {
   return (
     <ToastProvider>
-      <MarketplaceApp />
+      <StudentProvider>
+        <MarketplaceApp />
+      </StudentProvider>
     </ToastProvider>
   );
 }

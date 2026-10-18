@@ -3,15 +3,19 @@ import {
   Search, 
   MapPin, 
   PlusCircle, 
-  ChevronDown,
-  ShieldCheck,
-  Package,
-  Zap,
-  Bike,
-  Users,
-  X
+  ChevronDown, 
+  ShieldCheck, 
+  Package, 
+  Zap, 
+  Bike, 
+  Users, 
+  UserPlus,
+  MessageSquare,
+  GraduationCap,
+  X 
 } from 'lucide-react';
 import { NIGERIAN_LOCATIONS } from '../data/constants';
+import { useStudent } from '../context/StudentContext';
 
 interface HeaderProps {
   selectedLocation: string;
@@ -23,8 +27,10 @@ interface HeaderProps {
   onSelectOkadaCategory: () => void;
   onSelectWukariRiders: () => void;
   onSelectWantedBoard: () => void;
+  onSelectSquatterBoard?: () => void;
   isWukariRidersActive?: boolean;
   isWantedBoardActive?: boolean;
+  isSquatterBoardActive?: boolean;
   myAdsCount: number;
 }
 
@@ -38,12 +44,15 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectOkadaCategory,
   onSelectWukariRiders,
   onSelectWantedBoard,
+  onSelectSquatterBoard,
   isWukariRidersActive = false,
   isWantedBoardActive = false,
+  isSquatterBoardActive = false,
   myAdsCount,
 }) => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const { profile, setIsFriendsModalOpen, setIsProfileModalOpen, pendingRequestsCount, unreadChatsCount } = useStudent();
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-xs">
@@ -60,6 +69,16 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="truncate hidden sm:inline">Buyers post what they need • Sellers call & WhatsApp direct</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-[11px]">
+            <button 
+              onClick={onSelectSquatterBoard}
+              className={`px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors ${
+                isSquatterBoardActive
+                  ? 'bg-white text-[#008751]'
+                  : 'bg-emerald-900/40 text-emerald-100 hover:bg-emerald-800/60'
+              }`}
+            >
+              <span>🏠 Squatter</span>
+            </button>
             <button 
               onClick={onSelectWantedBoard}
               className={`px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors ${
@@ -186,6 +205,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Search className="w-5 h-5" />
           </button>
 
+          {/* Squatter Board Button */}
+          <button
+            onClick={onSelectSquatterBoard}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black shadow-xs transition-colors border ${
+              isSquatterBoardActive
+                ? 'bg-[#008751] text-white border-emerald-600 ring-2 ring-emerald-200'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-[#008751] border-emerald-200'
+            }`}
+          >
+            <span className="text-sm">🏠</span>
+            <span>Squatter Board</span>
+          </button>
+
           {/* Wanted Board Button */}
           <button
             onClick={onSelectWantedBoard}
@@ -210,6 +242,35 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Bike className="w-3.5 h-3.5" />
             <span>Wukari Riders 🏍️</span>
+          </button>
+
+          {/* Friends & Network Button */}
+          <button
+            onClick={() => setIsFriendsModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-bold text-gray-700 hover:text-[#008751] hover:bg-emerald-50 rounded-xl transition-colors relative border border-gray-200"
+            title="Student Friends & Private Chats"
+          >
+            <Users className="w-4 h-4 text-[#008751]" />
+            <span className="hidden sm:inline">Friends</span>
+            {(pendingRequestsCount > 0 || unreadChatsCount > 0) && (
+              <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black animate-pulse">
+                {pendingRequestsCount + unreadChatsCount}
+              </span>
+            )}
+          </button>
+
+          {/* Student Profile Quick Pill */}
+          <button
+            onClick={() => setIsProfileModalOpen(true)}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-colors"
+            title="My Campus Student Profile"
+          >
+            <div className="w-6 h-6 rounded-full bg-[#008751] text-white flex items-center justify-center text-[10px] font-black">
+              {profile?.fullName?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <span className="hidden lg:inline max-w-[80px] truncate">
+              {profile?.fullName ? profile.fullName.split(' ')[0] : 'Profile'}
+            </span>
           </button>
 
           {/* My Ads */}

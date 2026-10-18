@@ -22,6 +22,7 @@ import { db } from '../firebase';
 import { CAMPUSES, WANTED_CATEGORIES, CAMPUS_LOCATIONS_WUKARI } from '../data/constants';
 import { WantedItem } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useStudent } from '../context/StudentContext';
 import { compressImageToBase64 } from '../utils/imageCompressor';
 
 interface PostWantedModalProps {
@@ -38,13 +39,14 @@ export const PostWantedModal: React.FC<PostWantedModalProps> = ({
   defaultCampus = 'Federal University Wukari (FU Wukari)'
 }) => {
   const { showToast } = useToast();
+  const { profile } = useStudent();
 
   // Form states
-  const [buyerName, setBuyerName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [school, setSchool] = useState(defaultCampus);
+  const [buyerName, setBuyerName] = useState(profile?.fullName || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
+  const [school, setSchool] = useState(profile?.campus || defaultCampus);
   const [customSchool, setCustomSchool] = useState('');
-  const [location, setLocation] = useState('FUW School Gate');
+  const [location, setLocation] = useState(profile?.hostelArea || 'FUW School Gate');
   const [customLocation, setCustomLocation] = useState('');
   const [itemWanted, setItemWanted] = useState('');
   const [category, setCategory] = useState(WANTED_CATEGORIES[0]);
@@ -52,8 +54,8 @@ export const PostWantedModal: React.FC<PostWantedModalProps> = ({
   const [budgetType, setBudgetType] = useState<'up_to' | 'fixed' | 'negotiable'>('up_to');
   const [urgency, setUrgency] = useState<'Urgent' | 'This Week' | 'Flexible'>('Urgent');
   const [description, setDescription] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber || '');
+  const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phoneNumber || '');
   const [sampleImageUrl, setSampleImageUrl] = useState('');
 
   // Processing & Loading states
@@ -147,6 +149,7 @@ export const PostWantedModal: React.FC<PostWantedModalProps> = ({
 
     try {
       const wantedPayload = {
+        buyerId: profile?.id || ('std_' + Math.random().toString(36).substring(2, 9)),
         buyerName: buyerName.trim(),
         avatarUrl: avatarUrl || '',
         school: finalSchool,
