@@ -1,26 +1,32 @@
 {
   "entities": {
-    "Product": {
-      "title": "Product",
-      "description": "Marketplace product listed by a registered seller",
+    "RegisteredPhone": {
+      "title": "RegisteredPhone",
+      "description": "Secure device registration linked to verified owner account",
       "type": "object",
       "properties": {
-        "title": { "type": "string", "maxLength": 150 },
-        "description": { "type": "string", "maxLength": 3000 },
-        "price": { "type": "number" },
-        "category": { "type": "string", "maxLength": 60 },
-        "condition": { "type": "string", "enum": ["New", "Used", "Fair"] },
-        "images": { "type": "array" },
-        "imageUrl": { "type": "string" },
-        "location": { "type": "string", "maxLength": 100 },
-        "sellerId": { "type": "string", "maxLength": 128 },
-        "sellerName": { "type": "string", "maxLength": 100 },
-        "sellerPhone": { "type": "string", "maxLength": 30 },
-        "status": { "type": "string", "enum": ["approved", "pending", "sold", "rejected"] },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "imei": { "type": "string", "pattern": "^[0-9]{15}$" },
+        "ownerPhone": { "type": "string", "maxLength": 30 },
+        "ownerEmail": { "type": "string", "format": "email" },
+        "deviceModel": { "type": "string", "maxLength": 100 },
+        "carrier": { "type": "string", "maxLength": 60 },
+        "protectionEnabled": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "views": { "type": "number" }
+        "lastLocation": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "accuracy": { "type": "number" },
+            "timestamp": { "type": "string" },
+            "address": { "type": "string" },
+            "batteryLevel": { "type": "number" }
+          }
+        },
+        "lastLocationUpdatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["title", "description", "price", "category", "condition", "imageUrl", "location", "sellerId", "sellerName", "status"]
+      "required": ["ownerUid", "imei", "ownerPhone", "ownerEmail", "deviceModel", "protectionEnabled"]
     },
     "User": {
       "title": "User",
@@ -31,47 +37,29 @@
         "email": { "type": "string", "format": "email" },
         "fullName": { "type": "string", "maxLength": 100 },
         "phone": { "type": "string", "maxLength": 30 },
-        "location": { "type": "string", "maxLength": 100 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "fullName", "phone", "location"]
-    },
-    "Chat": {
-      "title": "Chat",
-      "description": "Conversation between buyer and seller regarding a product",
-      "type": "object",
-      "properties": {
-        "productId": { "type": "string", "maxLength": 128 },
-        "productTitle": { "type": "string", "maxLength": 150 },
-        "productPrice": { "type": "number" },
-        "productImageUrl": { "type": "string" },
-        "buyerId": { "type": "string", "maxLength": 128 },
-        "buyerName": { "type": "string", "maxLength": 100 },
-        "sellerId": { "type": "string", "maxLength": 128 },
-        "sellerName": { "type": "string", "maxLength": 100 },
-        "participants": { "type": "array" },
-        "lastMessage": { "type": "string", "maxLength": 1000 },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["productId", "buyerId", "sellerId", "participants", "lastMessage"]
+      "required": ["uid", "email"]
     }
   },
   "firestore": {
-    "/products/{productId}": {
-      "schema": "Product",
-      "description": "All marketplace product listings"
+    "/registeredPhones/{deviceId}": {
+      "schema": "RegisteredPhone",
+      "description": "Registered devices with owner credentials and location telemetry"
     },
-    "/users/{userId}": {
-      "schema": "User",
-      "description": "Registered buyer and seller profiles"
-    },
-    "/chats/{chatId}": {
-      "schema": "Chat",
-      "description": "Marketplace buyer-seller chats"
-    },
-    "/chats/{chatId}/messages/{messageId}": {
-      "schema": { "$ref": "ChatMessage" },
-      "description": "Subcollection messages for each chat"
+    "/registeredPhones/{deviceId}/locationHistory/{historyId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "accuracy": { "type": "number" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "batteryLevel": { "type": "number" }
+        },
+        "required": ["lat", "lng", "accuracy"]
+      },
+      "description": "Historical GPS location records for authorized recovery"
     }
   }
 }

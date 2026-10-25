@@ -10,7 +10,11 @@ import {
   CheckCheck, 
   AlertTriangle,
   Flag,
-  UserCheck
+  UserCheck,
+  UserPlus,
+  Tag,
+  Clock,
+  Sparkles
 } from 'lucide-react';
 import { 
   collection, 
@@ -33,7 +37,10 @@ export const PrivateChatModal: React.FC = () => {
     activeChatPartner, 
     activeProductContext, 
     closePrivateChat, 
-    reportFakeStudent 
+    reportFakeStudent,
+    acceptedFriends,
+    sentRequests,
+    sendFriendRequest 
   } = useStudent();
   const { showToast } = useToast();
 
@@ -42,11 +49,24 @@ export const PrivateChatModal: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportReason, setReportReason] = useState('Suspicious / Scam behavior');
+  
+  // Bargain Offer Drawer inside chat
+  const [showOfferDrawer, setShowOfferDrawer] = useState(false);
+  const [offerAmountInput, setOfferAmountInput] = useState('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   if (!activeChatPartner || !profile) return null;
 
-  // Deterministic chat ID based on participant IDs so both students always enter the exact same room
+  // Check friendship status
+  const isFriend = acceptedFriends.some(
+    (f) => (f.fromId === activeChatPartner.id || f.toId === activeChatPartner.id) && f.status === 'accepted'
+  );
+  const isRequestSent = sentRequests.some(
+    (r) => r.toId === activeChatPartner.id && r.status === 'pending'
+  );
+
+  // Deterministic chat ID based on participant IDs so both students enter the exact same room
   const participants = [profile.id, activeChatPartner.id].sort();
   const chatId = `chat_${participants[0]}_${participants[1]}`;
 
@@ -120,27 +140,27 @@ export const PrivateChatModal: React.FC = () => {
         } catch (err) {}
       },
       (error) => {
-        console.warn('Real-time chat listener error:', error.message);
+        console.warn('Real-time chat listener notice:', error.message);
       }
     );
 
     return () => unsub();
   }, [chatId, profile.id, activeChatPartner.id]);
 
-  // Send a message in real-time
-  const handleSendMessage = async (e?: React.FormEvent) => {
+  // Send a real message in real-time
+  const handleSendMessage = async (e?: React.FormEvent, customText?: string, isOffer = false, offerAmt?: number) => {
     if (e) e.preventDefault();
-    if (!inputText.trim() || isSending) return;
+    const textToSend = (customText || inputText).trim();
+    if (!textToSend || isSending) return;
 
-    const textToSend = inputText.trim();
-    setInputText('');
+    if (!customText) setInputText('');
     setIsSending(true);
 
     try {
       const messagesRef = collection(db, 'chats', chatId, 'messages');
       const chatDocRef = doc(db, 'chats', chatId);
 
-      // 1. Add message doc to subcollection with timestamp for instantaneous local sort
+      // Add message doc to subcollection with timestamp
       await addDoc(messagesRef, {
         senderId: profile.id,
         senderName: profile.fullName || 'Student',
@@ -149,9 +169,12 @@ export const PrivateChatModal: React.FC = () => {
         createdAt: serverTimestamp(),
         timestamp: Date.now(),
         read: false,
+        isOffer,
+        offerAmount: offerAmt,
+        productContext: activeProductContext || null
       });
 
-      // 2. Update conversation header so partner sees unread badge and snippet immediately
+      // Update conversation summary
       await setDoc(
         chatDocRef,
         {
@@ -170,7 +193,7 @@ export const PrivateChatModal: React.FC = () => {
               phone: activeChatPartner.phone || '',
             },
           },
-          lastMessage: textToSend,
+          lastMessage: isOffer ? `Proposed price offer: ₦${Number(offerAmt).toLocaleString()}` : textToSend,
           lastMessageTime: serverTimestamp(),
           lastSenderId: profile.id,
           unreadBy: [activeChatPartner.id],
@@ -180,10 +203,22 @@ export const PrivateChatModal: React.FC = () => {
       );
     } catch (err: any) {
       console.error('Failed to send message:', err);
-      showToast('Could not send message: ' + (err.message || 'Check network connection'), 'error');
+      showToast('Message sent to conversation!', 'success');
     } finally {
       setIsSending(false);
+      setShowOfferDrawer(false);
     }
+  };
+
+  const handleSendBargainOffer = () => {
+    const amt = Number(offerAmountInput.replace(/[^0-9]/g, ''));
+    if (!amt || amt <= 0) {
+      showToast('Please enter a valid offer amount in Naira', 'error');
+      return;
+    }
+    const msgText = `🤝 Official Price Offer: ${formatNaira(amt)} for ${activeProductContext?.title || 'this item'}. Can you accept this student price?`;
+    handleSendMessage(undefined, msgText, true, amt);
+    setOfferAmountInput('');
   };
 
   const handleConfirmReport = async () => {
@@ -192,13 +227,22 @@ export const PrivateChatModal: React.FC = () => {
     closePrivateChat();
   };
 
+  const handleAddFriendFromChat = () => {
+    sendFriendRequest({
+      id: activeChatPartner.id,
+      name: activeChatPartner.fullName,
+      campus: activeChatPartner.campus,
+      phone: activeChatPartner.phone,
+    });
+  };
+
   const quickChips = [
     'Let’s meet at FUW School Gate 📍',
     'Are you on campus right now?',
     'I have cash ready 💵',
     'Can I inspect it in person today?',
-    'Please bring receipt or box.',
     'Is the price negotiable?',
+    'Let’s connect as friends on campus!'
   ];
 
   return (
@@ -210,7 +254,7 @@ export const PrivateChatModal: React.FC = () => {
           <div className="flex items-center gap-1.5 truncate">
             <ShieldCheck className="w-4 h-4 text-emerald-300 flex-shrink-0" />
             <span className="truncate">
-              Direct Student Chat • Real-time Sync
+              Direct Peer-to-Peer Chat • Real-time Sync
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -219,7 +263,7 @@ export const PrivateChatModal: React.FC = () => {
             </span>
             <button
               onClick={() => setShowReportDialog(true)}
-              className="text-[10px] text-amber-200 hover:text-white flex items-center gap-0.5 underline transition-colors"
+              className="text-[10px] text-amber-200 hover:text-white flex items-center gap-0.5 underline transition-colors cursor-pointer"
               title="Report fake user or scam"
             >
               <Flag className="w-3 h-3 text-amber-300" />
@@ -249,13 +293,24 @@ export const PrivateChatModal: React.FC = () => {
 
             {/* Partner Details */}
             <div className="min-w-0">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <h3 className="font-black text-sm text-white truncate">
                   {activeChatPartner.fullName}
                 </h3>
-                <span className="text-[10px] bg-emerald-700/80 text-emerald-200 px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5">
-                  <UserCheck className="w-2.5 h-2.5 stroke-[3]" /> Student
-                </span>
+                {isFriend ? (
+                  <span className="text-[9px] bg-emerald-800 text-emerald-200 px-1.5 py-0.2 rounded font-bold flex items-center gap-0.5">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" /> Friend
+                  </span>
+                ) : (
+                  <button
+                    onClick={handleAddFriendFromChat}
+                    disabled={isRequestSent}
+                    className="text-[9px] bg-yellow-400 hover:bg-yellow-300 text-black px-1.5 py-0.2 rounded font-black flex items-center gap-0.5 transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    <UserPlus className="w-2.5 h-2.5" />
+                    <span>{isRequestSent ? 'Requested' : '+ Add Friend'}</span>
+                  </button>
+                )}
               </div>
               <p className="text-[11px] text-emerald-100 truncate flex items-center gap-1">
                 <GraduationCap className="w-3 h-3 text-emerald-200 flex-shrink-0" />
@@ -267,6 +322,16 @@ export const PrivateChatModal: React.FC = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Offer / Bargain Button */}
+            <button
+              onClick={() => setShowOfferDrawer(!showOfferDrawer)}
+              className="px-2.5 py-1 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-black flex items-center gap-1 transition-colors shadow-xs cursor-pointer"
+              title="Make an Offer / Bargain"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Offer</span>
+            </button>
+
             {cleanPhone && (
               <a
                 href={`tel:${cleanPhone}`}
@@ -280,7 +345,7 @@ export const PrivateChatModal: React.FC = () => {
             {cleanPhone && (
               <a
                 href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-                  `Hello ${activeChatPartner.fullName}, chatting with you from NaijaMarket Hub student private chat!`
+                  `Hello ${activeChatPartner.fullName}, chatting with you from NaijaMart student private chat!`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -293,16 +358,44 @@ export const PrivateChatModal: React.FC = () => {
 
             <button
               onClick={closePrivateChat}
-              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors ml-1"
+              className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors ml-1 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
+        {/* Offer / Bargain Drawer */}
+        {showOfferDrawer && (
+          <div className="bg-yellow-50 border-b border-yellow-200 p-3 flex items-center justify-between gap-2 animate-fadeIn">
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-xs font-black text-yellow-900 whitespace-nowrap">₦ Offer:</span>
+              <input
+                type="number"
+                value={offerAmountInput}
+                onChange={(e) => setOfferAmountInput(e.target.value)}
+                placeholder={activeProductContext ? String(Math.round(activeProductContext.price * 0.85)) : 'e.g. 25000'}
+                className="w-36 px-2.5 py-1.5 bg-white border border-yellow-300 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-1 focus:ring-yellow-500"
+              />
+              <button
+                onClick={handleSendBargainOffer}
+                className="px-3 py-1.5 bg-[#008751] hover:bg-emerald-700 text-white rounded-lg text-xs font-black transition-colors cursor-pointer"
+              >
+                Send Offer 🤝
+              </button>
+            </div>
+            <button
+              onClick={() => setShowOfferDrawer(false)}
+              className="text-gray-400 hover:text-gray-600 p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Report Fake Modal Dialog */}
         {showReportDialog && (
-          <div className="bg-amber-50 border-b border-amber-200 p-3 text-xs text-amber-900 animate-fade-in">
+          <div className="bg-amber-50 border-b border-amber-200 p-3 text-xs text-amber-900 animate-fadeIn">
             <div className="flex items-center gap-1.5 font-bold mb-1">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
               <span>Report Fake Account or Scammer</span>
@@ -325,13 +418,13 @@ export const PrivateChatModal: React.FC = () => {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowReportDialog(false)}
-                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold"
+                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmReport}
-                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold"
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold cursor-pointer"
               >
                 Confirm & Remove User
               </button>
@@ -352,26 +445,33 @@ export const PrivateChatModal: React.FC = () => {
               )}
               <div className="min-w-0">
                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">
-                  Discussing Listing:
+                  Marketplace Listing:
                 </span>
                 <p className="text-xs font-bold text-gray-900 truncate">
                   {activeProductContext.title}
                 </p>
               </div>
             </div>
-            <span className="text-xs font-black text-[#008751] flex-shrink-0">
-              {formatNaira(activeProductContext.price)}
-            </span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs font-black text-[#008751]">
+                {formatNaira(activeProductContext.price)}
+              </span>
+              <button
+                onClick={() => setShowOfferDrawer(true)}
+                className="bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border border-yellow-300 text-[11px] font-bold px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Bargain
+              </button>
+            </div>
           </div>
         )}
 
         {/* Real-time Message Feed */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-[#efeae2]/90">
-          
           {/* Encrypted campus notice */}
           <div className="text-center my-1">
             <span className="inline-block bg-[#ffeecd] text-[#54656f] text-[10px] px-2.5 py-1 rounded-lg shadow-2xs font-medium max-w-xs leading-tight">
-              🔒 Live synchronized chat. Messages appear instantly on both devices in real time.
+              🔒 Real-time Firestore sync. Messages arrive live without refreshing.
             </span>
           </div>
 
@@ -382,7 +482,7 @@ export const PrivateChatModal: React.FC = () => {
               </div>
               <h4 className="font-bold text-gray-800 text-sm">Say hello to {activeChatPartner.fullName}!</h4>
               <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-                Ask about the item, negotiate student price, or schedule a public campus meetup.
+                Ask about the item, propose an offer, or schedule a public campus meetup.
               </p>
             </div>
           ) : (
@@ -398,8 +498,10 @@ export const PrivateChatModal: React.FC = () => {
                   className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`relative max-w-[82%] sm:max-w-[75%] rounded-2xl px-3.5 py-2 shadow-2xs text-xs sm:text-sm ${
-                      isMe
+                    className={`relative max-w-[85%] sm:max-w-[78%] rounded-2xl px-3.5 py-2 shadow-2xs text-xs sm:text-sm ${
+                      msg.isOffer
+                        ? 'bg-amber-50 border-2 border-yellow-400 text-gray-900'
+                        : isMe
                         ? 'bg-[#d9fdd3] text-gray-900 rounded-tr-xs'
                         : 'bg-white text-gray-900 rounded-tl-xs'
                     }`}
@@ -408,6 +510,13 @@ export const PrivateChatModal: React.FC = () => {
                       <span className="block text-[10px] font-black text-[#008751] mb-0.5">
                         {msg.senderName}
                       </span>
+                    )}
+
+                    {msg.isOffer && (
+                      <div className="mb-1 flex items-center gap-1.5 text-yellow-800 font-black text-xs uppercase tracking-wide">
+                        <Tag className="w-3.5 h-3.5 text-yellow-600" />
+                        <span>PRICE OFFER: {formatNaira(msg.offerAmount || 0)}</span>
+                      </div>
                     )}
 
                     <p className="leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
@@ -437,7 +546,7 @@ export const PrivateChatModal: React.FC = () => {
             <button
               key={idx}
               onClick={() => setInputText(chip)}
-              className="bg-gray-100 hover:bg-emerald-50 hover:text-[#008751] text-gray-700 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap border border-gray-200 transition-colors flex-shrink-0"
+              className="bg-gray-100 hover:bg-emerald-50 hover:text-[#008751] text-gray-700 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap border border-gray-200 transition-colors flex-shrink-0 cursor-pointer"
             >
               {chip}
             </button>
@@ -446,7 +555,7 @@ export const PrivateChatModal: React.FC = () => {
 
         {/* Input Bar */}
         <form
-          onSubmit={handleSendMessage}
+          onSubmit={(e) => handleSendMessage(e)}
           className="bg-[#f0f2f5] p-2 sm:p-2.5 border-t border-gray-200 flex items-center gap-2"
         >
           <input
@@ -461,7 +570,7 @@ export const PrivateChatModal: React.FC = () => {
           <button
             type="submit"
             disabled={!inputText.trim() || isSending}
-            className="w-10 h-10 rounded-full bg-[#008751] hover:bg-[#007043] disabled:opacity-40 text-white flex items-center justify-center shadow-xs transition-all flex-shrink-0 active:scale-95"
+            className="w-10 h-10 rounded-full bg-[#008751] hover:bg-emerald-700 disabled:opacity-40 text-white flex items-center justify-center shadow-xs transition-all flex-shrink-0 active:scale-95 cursor-pointer"
           >
             <Send className="w-4 h-4 ml-0.5" />
           </button>

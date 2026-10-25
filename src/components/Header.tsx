@@ -28,9 +28,15 @@ interface HeaderProps {
   onSelectWukariRiders: () => void;
   onSelectWantedBoard: () => void;
   onSelectSquatterBoard?: () => void;
+  onSelectFindMyPhone?: () => void;
+  onSelectProtectPhone?: () => void;
+  onSelectChatSpace?: () => void;
   isWukariRidersActive?: boolean;
   isWantedBoardActive?: boolean;
   isSquatterBoardActive?: boolean;
+  isFindMyPhoneActive?: boolean;
+  isProtectPhoneActive?: boolean;
+  isChatSpaceActive?: boolean;
   myAdsCount: number;
 }
 
@@ -45,9 +51,15 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectWukariRiders,
   onSelectWantedBoard,
   onSelectSquatterBoard,
+  onSelectFindMyPhone,
+  onSelectProtectPhone,
+  onSelectChatSpace,
   isWukariRidersActive = false,
   isWantedBoardActive = false,
   isSquatterBoardActive = false,
+  isFindMyPhoneActive = false,
+  isProtectPhoneActive = false,
+  isChatSpaceActive = false,
   myAdsCount,
 }) => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
@@ -68,7 +80,18 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <span className="truncate hidden sm:inline">Buyers post what they need • Sellers call & WhatsApp direct</span>
           </div>
+
           <div className="flex items-center gap-2 sm:gap-3 text-[11px]">
+            <button 
+              onClick={onSelectFindMyPhone}
+              className={`px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors ${
+                isFindMyPhoneActive
+                  ? 'bg-white text-[#008751]'
+                  : 'bg-emerald-950 text-yellow-300 hover:bg-emerald-900 border border-yellow-400/40'
+              }`}
+            >
+              <span>🛡️ Find Phone</span>
+            </button>
             <button 
               onClick={onSelectSquatterBoard}
               className={`px-2 py-0.5 rounded-md font-black flex items-center gap-1 transition-colors ${
@@ -205,6 +228,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Search className="w-5 h-5" />
           </button>
 
+          {/* Find My Phone Button */}
+          <button
+            onClick={onSelectFindMyPhone}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black shadow-xs transition-colors border ${
+              isFindMyPhoneActive
+                ? 'bg-gray-900 text-white border-black ring-2 ring-emerald-300'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-[#008751] border-emerald-200'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-[#008751]" />
+            <span>Find My Phone</span>
+          </button>
+
           {/* Squatter Board Button */}
           <button
             onClick={onSelectSquatterBoard}
@@ -244,14 +280,18 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Wukari Riders 🏍️</span>
           </button>
 
-          {/* Friends & Network Button */}
+          {/* Real Chatting Space & Friends Button */}
           <button
-            onClick={() => setIsFriendsModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 text-xs font-bold text-gray-700 hover:text-[#008751] hover:bg-emerald-50 rounded-xl transition-colors relative border border-gray-200"
-            title="Student Friends & Private Chats"
+            onClick={() => onSelectChatSpace ? onSelectChatSpace() : setIsFriendsModalOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-black rounded-xl transition-all relative border shadow-xs cursor-pointer ${
+              isChatSpaceActive
+                ? 'bg-[#008751] text-white border-emerald-600 ring-2 ring-emerald-200'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-[#008751] border-emerald-300'
+            }`}
+            title="Real-Time Student Chat & Friends Network"
           >
-            <Users className="w-4 h-4 text-[#008751]" />
-            <span className="hidden sm:inline">Friends</span>
+            <MessageSquare className="w-4 h-4" />
+            <span className="hidden sm:inline">Real Chat</span>
             {(pendingRequestsCount > 0 || unreadChatsCount > 0) && (
               <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black animate-pulse">
                 {pendingRequestsCount + unreadChatsCount}

@@ -23,6 +23,8 @@ export interface Product {
   stockLeft?: number;
   sellerId?: string;
   sellerCampus?: string;
+  ownerUid?: string;
+  ownerPhone?: string;
 }
 
 export interface OkadaRider {
@@ -153,6 +155,14 @@ export interface ChatMessage {
   createdAt?: any;
   timestamp?: number;
   read?: boolean;
+  isOffer?: boolean;
+  offerAmount?: number;
+  productContext?: {
+    id: string;
+    title: string;
+    price: number;
+    imageUrl?: string;
+  };
 }
 
 export interface SquatterItem {
@@ -177,3 +187,115 @@ export interface SquatterFilterState {
   maxPrice: string;
 }
 
+export interface ProtectedPhone {
+  id: string; // IMEI 1
+  ownerUid?: string;
+  ownerName: string;
+  ownerPhone: string;
+  model: string;
+  imei1: string;
+  imei2?: string | null;
+  imeis?: string[];
+  status: 'protected' | 'stolen' | 'recovered';
+  createdAt: any;
+  lastUpdated?: any;
+  lastLocation?: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    timestamp?: any;
+    address?: string;
+    city?: string;
+  } | null;
+  batteryLevel?: number;
+  fcmToken?: string | null;
+  isVerified?: boolean;
+  protectionCertificateNumber?: string;
+  carrier?: string;
+  lockMessage?: string;
+  isRinging?: boolean;
+  command?: {
+    type: 'RING' | 'LOCK' | 'ERASE' | 'PING';
+    message?: string;
+    timestamp?: any;
+  } | null;
+}
+
+export interface StolenPhoneReport {
+  id: string; // IMEI
+  imei: string;
+  model: string;
+  whereStolen: string;
+  dateStolen: string;
+  ownerPhone: string;
+  rewardAmount: number;
+  policeExtractNumber?: string;
+  status: 'stolen' | 'recovered';
+  reportedAt: any;
+  description?: string;
+}
+
+export interface TrackLog {
+  id: string;
+  imei: string;
+  timestamp: any;
+  userAgent?: string;
+  ip?: string;
+  city?: string;
+  region?: string;
+  org?: string;
+  lat?: number | null;
+  lng?: number | null;
+  accuracy?: number | null;
+  consentGiven: boolean;
+  gpsTimestamp?: any;
+  status?: string;
+  note?: string;
+}
+
+export interface RecoveryAction {
+  id?: string;
+  imei: string;
+  type: 'RING' | 'LOCK' | 'ERASE' | 'LIVE_LOCATION';
+  message?: string;
+  requestedByUid?: string;
+  requestedByPhone?: string;
+  status: 'pending' | 'sent' | 'delivered';
+  timestamp: any;
+}
+
+export interface LocationHistoryItem {
+  id?: string;
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  address?: string;
+  city?: string;
+  timestamp: any;
+  batteryLevel?: number;
+  event?: string;
+}
+
+export interface DeviceLocation {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  timestamp: any;
+  address?: string;
+  batteryLevel?: number | null;
+}
+
+export interface RegisteredPhone {
+  id: string; // documentId (secure random id)
+  ownerUid: string;
+  imei: string;
+  ownerPhone: string;
+  ownerEmail: string;
+  deviceModel: string;
+  carrier?: string;
+  createdAt: any;
+  protectionEnabled: boolean;
+  lastLocation: DeviceLocation | null;
+  lastLocationUpdatedAt: any;
+  lastReportedFrom?: string;
+}

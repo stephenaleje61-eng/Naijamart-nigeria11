@@ -2,23 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="google-site-verification" content="9jythEiBzGMQqZ74rWk0HIpHwpWNqP7H9XeYWso1QL8" />
-    <title>NaijaMarket Hub - Buy & Sell Across Nigeria | Wukari & Taraba</title>
-    <meta name="description" content="NaijaMarket Hub - Nigeria's trusted online marketplace" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>NaijaMart Hub — Marketplace & Self-Tracking Phone Protection</title>
+    <meta name="description" content="NaijaMart Hub: Buy and sell goods, connect with campus buyers, and protect your phone with self-service GPS tracking and police reports." />
+    <meta name="theme-color" content="#008751" />
     <link rel="icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="canonical" href="https://naijamart-nigeria11.vercel.app/" />
-    <meta property="og:title" content="NaijaMarket Hub - Buy & Sell Across Nigeria | Wukari & Taraba" />
-    <meta property="og:description" content="NaijaMarket Hub - Nigeria's trusted online marketplace" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- OpenGraph Social Cards -->
+    <meta property="og:title" content="NaijaMart Hub — Marketplace & Self-Tracking Phone Protection" />
+    <meta property="og:description" content="NaijaMart Hub: Buy and sell goods, connect with campus buyers, and protect your phone with self-service GPS tracking and police reports." />
     <meta property="og:image" content="/icon.png" />
-    <meta property="og:url" content="https://naijamart-nigeria11.vercel.app/" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/icon.png" />
+
+    <!-- Leaflet CSS for OpenStreetMap display -->
+    <link 
+      rel="stylesheet" 
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+      crossorigin="" 
+    />
   </head>
-  <body>
+  <body class="bg-[#F5F7F5] text-[#1F2937] antialiased selection:bg-[#168447] selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Clear service workers and cache so new app loads fresh immediately
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (let reg of registrations) {
+            reg.unregister();
+          }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          for (let name of names) caches.delete(name);
+        });
+      }
+    </script>
   </body>
 </html>

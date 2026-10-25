@@ -16,12 +16,20 @@ interface CategoriesBarProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   onSelectSquatterBoard?: () => void;
+  onSelectFindMyPhone?: () => void;
+  onSelectProtectPhone?: () => void;
+  onSelectChatSpace?: () => void;
+  isChatSpaceActive?: boolean;
 }
 
 export const CategoriesBar: React.FC<CategoriesBarProps> = ({
   selectedCategory,
   onSelectCategory,
   onSelectSquatterBoard,
+  onSelectFindMyPhone,
+  onSelectProtectPhone,
+  onSelectChatSpace,
+  isChatSpaceActive = false,
 }) => {
   const getIcon = (name: string) => {
     switch (name) {
@@ -65,6 +73,61 @@ export const CategoriesBar: React.FC<CategoriesBarProps> = ({
             <span>FUW Squatter Board - Find Bedspace FREE</span>
             <span className="text-[10px] bg-yellow-400 text-black px-1.5 py-0.2 rounded-md font-black tracking-wider uppercase shadow-2xs">
               HOT
+            </span>
+          </a>
+
+          {/* Find My Phone - Phone Recovery Link */}
+          <a
+            href="/find-my-phone"
+            onClick={(e) => {
+              if (onSelectFindMyPhone) {
+                e.preventDefault();
+                onSelectFindMyPhone();
+              }
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap transition-all flex-shrink-0 shadow-sm border border-emerald-700 bg-gray-900 text-white hover:bg-black active:scale-95"
+          >
+            <span className="text-sm">🛡️</span>
+            <span>Find My Phone & IMEI Checker</span>
+            <span className="text-[10px] bg-[#008751] text-white px-1.5 py-0.2 rounded-md font-black uppercase">
+              Free
+            </span>
+          </a>
+
+          {/* Protect Phone Link */}
+          <a
+            href="/protect"
+            onClick={(e) => {
+              if (onSelectProtectPhone) {
+                e.preventDefault();
+                onSelectProtectPhone();
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 bg-emerald-50 text-[#008751] border border-emerald-200 hover:bg-emerald-100"
+          >
+            <span className="text-sm">📱</span>
+            <span>Protect Phone (Pre-Theft)</span>
+          </a>
+
+          {/* Real Chat & Friends Space Link */}
+          <a
+            href="/chat"
+            onClick={(e) => {
+              if (onSelectChatSpace) {
+                e.preventDefault();
+                onSelectChatSpace();
+              }
+            }}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all flex-shrink-0 border cursor-pointer ${
+              isChatSpaceActive
+                ? 'bg-[#008751] text-white border-emerald-600 shadow-xs'
+                : 'bg-emerald-50 text-[#008751] border-emerald-300 hover:bg-emerald-100'
+            }`}
+          >
+            <span className="text-sm">💬</span>
+            <span>Real Chat & Friends</span>
+            <span className="text-[10px] bg-yellow-400 text-black px-1.5 py-0.2 rounded-md font-black">
+              LIVE
             </span>
           </a>
 

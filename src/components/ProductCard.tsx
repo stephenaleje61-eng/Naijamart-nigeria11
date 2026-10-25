@@ -19,11 +19,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     product.category?.toLowerCase().includes('okada') ||
     product.category?.toLowerCase().includes('motorcycle');
 
-  // Format clean phone for tel: and WhatsApp
-  const rawPhone = product.phoneNumber || '';
+  // Format clean phone for tel: and WhatsApp (defaults to 08167258121)
+  const rawPhone = product.phoneNumber || product.ownerPhone || '08167258121';
   const cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
 
-  const rawWhatsapp = product.whatsappNumber || product.phoneNumber || '';
+  const rawWhatsapp = product.whatsappNumber || product.ownerPhone || product.phoneNumber || '08167258121';
   const cleanDigits = rawWhatsapp.replace(/[^0-9]/g, '');
   const formattedWhatsapp = cleanDigits.startsWith('0')
     ? '234' + cleanDigits.substring(1)

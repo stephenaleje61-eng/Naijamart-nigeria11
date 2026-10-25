@@ -107,9 +107,17 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
         </div>
 
-        <div className="pt-6 border-t border-gray-800 text-center sm:flex sm:justify-between sm:items-center text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} NaijaMarket Hub - Jumia + Temu + Okada Market. No Login Required.</p>
-          <p className="mt-1 sm:mt-0 text-[11px] text-gray-400">100% Free Base64 Image Processing</p>
+        <div className="pt-6 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500">
+          <p>© {new Date().getFullYear()} NaijaMarket Hub • 100% Free Ads</p>
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400 font-semibold">
+            <a href="/squatter" className="hover:text-emerald-400 transition-colors">🏠 FUW Squatter Board</a>
+            <span>•</span>
+            <a href="/find-my-phone" className="hover:text-emerald-400 transition-colors">🛡️ Find My Phone</a>
+            <span>•</span>
+            <a href="/protect" className="hover:text-emerald-400 transition-colors">📱 Protect Phone</a>
+            <span>•</span>
+            <a href="/wanted" className="hover:text-emerald-400 transition-colors">🎯 Wanted Board</a>
+          </div>
         </div>
       </div>
     </footer>

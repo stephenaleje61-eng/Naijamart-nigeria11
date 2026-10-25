@@ -74,7 +74,7 @@ export const SquatterBoardView: React.FC<SquatterBoardViewProps> = ({
         const q = searchQuery.toLowerCase();
         const matchesLoc = item.location.toLowerCase().includes(q);
         const matchesDesc = item.description?.toLowerCase().includes(q);
-        const matchesRoom = item.people_in_room?.toLowerCase().includes(q);
+        const matchesRoom = String(item.people_in_room || '').toLowerCase().includes(q);
         if (!matchesLoc && !matchesDesc && !matchesRoom) {
           return false;
         }

@@ -1,6 +1,6 @@
 {
-  "name": "NaijaMart",
-  "description": "NaijaMart - Nigeria's Trusted Online Marketplace. Buy & sell phones, electronics, fashion, vehicles, and services with verified sellers across Nigeria.",
-  "requestFramePermissions": [],
+  "name": "NaijaMart Hub",
+  "description": "NaijaMart Hub - Nigeria's campus marketplace & self-tracking phone protection. Buy & sell phones, electronics, fashion, and track your devices.",
+  "requestFramePermissions": ["GEOLOCATION"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
