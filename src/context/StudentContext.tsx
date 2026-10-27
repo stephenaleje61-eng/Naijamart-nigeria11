@@ -75,93 +75,9 @@ interface StudentContextType {
 
 const StudentContext = createContext<StudentContextType | undefined>(undefined);
 
-// Real seed student profiles across Nigerian campuses
-const SEEDED_CAMPUS_STUDENTS: StudentProfile[] = [
-  {
-    id: 'std_fatima_fuw',
-    fullName: 'Fatima Bello',
-    campus: 'Federal University Wukari (FU Wukari)',
-    department: 'Economics',
-    level: '200L',
-    hostelArea: 'New Site Campus',
-    phoneNumber: '08139485721',
-    whatsappNumber: '08139485721',
-    isVerified: true,
-    bio: 'Economics 200L at FU Wukari. Buy & sell gadgets, hostels and study materials.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'std_emmanuel_fuw',
-    fullName: 'Emmanuel Adebayo',
-    campus: 'Federal University Wukari (FU Wukari)',
-    department: 'Computer Science',
-    level: '300L',
-    hostelArea: 'Hostel B, Room 14',
-    phoneNumber: '08023456789',
-    whatsappNumber: '08023456789',
-    isVerified: true,
-    bio: 'Software dev & student entrepreneur in Wukari. Hit me up for laptops & phones.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'std_chinedu_unilag',
-    fullName: 'Chinedu Okonkwo',
-    campus: 'University of Lagos (UNILAG)',
-    department: 'Accounting',
-    level: '400L',
-    hostelArea: 'Moremi Hall, Akoka',
-    phoneNumber: '09012345678',
-    whatsappNumber: '09012345678',
-    isVerified: true,
-    bio: 'Final year Accounting. Deals in iPhone, AirPods and fairly used electronics.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'std_blessing_fuw',
-    fullName: 'Blessing Chioma',
-    campus: 'Federal University Wukari (FU Wukari)',
-    department: 'Biochemistry',
-    level: '200L',
-    hostelArea: 'Hostel A Gate',
-    phoneNumber: '08034567890',
-    whatsappNumber: '08034567890',
-    isVerified: true,
-    bio: 'FUW student. Selling squatter bedspaces & clean hostel appliances.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'std_zainab_abu',
-    fullName: 'Zainab Aliyu',
-    campus: 'Ahmadu Bello University (ABU Zaria)',
-    department: 'Pharmacy',
-    level: '400L',
-    hostelArea: 'Suleiman Hall, Samaru',
-    phoneNumber: '08123456789',
-    whatsappNumber: '08123456789',
-    isVerified: true,
-    bio: 'ABU Zaria student community lead. Books, medical kits, and hostel gears.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 'std_tunde_ui',
-    fullName: 'Babatunde Ojo',
-    campus: 'University of Ibadan (UI)',
-    department: 'Electrical Engineering',
-    level: '300L',
-    hostelArea: 'Tedder Hall',
-    phoneNumber: '07034567891',
-    whatsappNumber: '07034567891',
-    isVerified: true,
-    bio: 'Tech enthusiast. Phone repairs, accessories & gadgets for students.',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
+// No fake student profiles - only real registered students from Firestore
+const SEEDED_CAMPUS_STUDENTS: StudentProfile[] = [];
+
 
 export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToast();
@@ -259,27 +175,6 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Auto-seed Firestore 'students' collection if empty so directory is real
-  useEffect(() => {
-    async function seedStudentsIfEmpty() {
-      try {
-        const snap = await getDocs(collection(db, 'students'));
-        if (snap.empty) {
-          for (const s of SEEDED_CAMPUS_STUDENTS) {
-            await setDoc(doc(db, 'students', s.id), {
-              ...s,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            });
-          }
-        }
-      } catch (err) {
-        console.warn('Student auto-seed fallback:', err);
-      }
-    }
-    seedStudentsIfEmpty();
-  }, []);
-
   // Sync profile from Firestore if it exists
   useEffect(() => {
     if (!profile?.id) return;
@@ -308,27 +203,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       snapshot.forEach((d) => {
         requests.push({ id: d.id, ...d.data() } as FriendRequest);
       });
-
-      // If user has 0 incoming requests, create an authentic initial request from Fatima Bello
-      if (requests.length === 0 && snapshot.empty) {
-        const initialIncomingReq: FriendRequest = {
-          id: `req_fatima_${profile.id.substring(0, 6)}`,
-          fromId: 'std_fatima_fuw',
-          fromName: 'Fatima Bello',
-          fromCampus: 'Federal University Wukari (FU Wukari)',
-          fromDepartment: 'Economics (200L)',
-          fromPhone: '08139485721',
-          toId: profile.id,
-          toName: profile.fullName || 'Student Peer',
-          toCampus: profile.campus || 'FU Wukari',
-          status: 'pending',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        setIncomingRequests([initialIncomingReq]);
-      } else {
-        setIncomingRequests(requests);
-      }
+      setIncomingRequests(requests);
     });
 
     return () => unsub();
@@ -408,11 +283,7 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         list.push({ ...data, id: studentId });
       });
 
-      if (list.length > 0) {
-        setAllStudents(list);
-      } else {
-        setAllStudents(SEEDED_CAMPUS_STUDENTS);
-      }
+      setAllStudents(list);
     });
 
     return () => unsub();
@@ -660,7 +531,12 @@ export const StudentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Quick helper to test receiving an incoming friend request
   const simulateIncomingFriendRequest = async () => {
     if (!profile) return;
-    const samplePeer = SEEDED_CAMPUS_STUDENTS[Math.floor(Math.random() * SEEDED_CAMPUS_STUDENTS.length)];
+    const otherStudents = allStudents.filter((s) => s.id !== profile.id);
+    if (otherStudents.length === 0) {
+      showToast('No other registered student peers available to connect with yet.', 'info');
+      return;
+    }
+    const samplePeer = otherStudents[Math.floor(Math.random() * otherStudents.length)];
     const simulatedReq: FriendRequest = {
       id: `req_sim_${Date.now()}`,
       fromId: samplePeer.id,

@@ -1,0 +1,12 @@
+export * from '../src/locallanguage/types';
+export * from '../src/locallanguage/LocalLanguagePortal';
+export * from '../src/locallanguage/services/translateService';
+export * from '../src/locallanguage/services/speechService';
+export * from '../src/locallanguage/data/defaultLessons';
+export * from '../src/locallanguage/data/curatedPhrases';
+export { TranslationWorkspace } from '../src/locallanguage/components/TranslationWorkspace';
+export { VoiceWorkspace } from '../src/locallanguage/components/VoiceWorkspace';
+export { LearnWorkspace } from '../src/locallanguage/components/LearnWorkspace';
+export { ConversationWorkspace } from '../src/locallanguage/components/ConversationWorkspace';
+export { PhrasesWorkspace } from '../src/locallanguage/components/PhrasesWorkspace';
+export { AdminLocalLanguage } from '../src/locallanguage/components/AdminLocalLanguage';

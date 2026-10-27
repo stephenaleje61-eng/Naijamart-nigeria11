@@ -8,7 +8,8 @@ import {
   sendPasswordResetEmail,
   signInAnonymously
 } from 'firebase/auth';
-import { auth } from '../firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -57,6 +58,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => unsubscribe();
   }, []);
+
+  // Sync user presence to Firestore users collection
+  useEffect(() => {
+    if (user?.uid) {
+      try {
+        setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          displayName: user.displayName || user.email?.split('@')[0] || 'Naija User',
+          email: user.email || '',
+          photoURL: user.photoURL || '',
+          isOnline: true,
+          lastSeen: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      } catch (err) {
+        console.warn('User presence sync note:', err);
+      }
+    }
+  }, [user]);
 
   const openAuthModal = (mode: 'signin' | 'signup' | 'reset' = 'signin') => {
     setAuthMode(mode);

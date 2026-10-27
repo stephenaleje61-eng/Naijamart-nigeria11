@@ -27,75 +27,10 @@ const LOCAL_STORAGE_PROTECTED = 'naijamart_local_protected_phones';
 const LOCAL_STORAGE_STOLEN = 'naijamart_local_stolen_phones';
 const LOCAL_STORAGE_TRACK_LOGS = 'naijamart_local_track_logs';
 
-// Seed demonstration devices with authentic 15-digit Luhn check digits
-export const DEMO_PROTECTED_PHONES: ProtectedPhone[] = [
-  {
-    id: '358249102847598',
-    ownerUid: 'demo_user_emmanuel',
-    ownerName: 'Emmanuel Adebayo',
-    ownerPhone: '08023456789',
-    model: 'Samsung Galaxy A14 5G (Black, 128GB)',
-    imei1: '358249102847598',
-    imei2: '358249102847580',
-    imeis: ['358249102847598', '358249102847580'],
-    status: 'protected',
-    isVerified: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-    lastUpdated: new Date(Date.now() - 1000 * 60 * 25),
-    lastLocation: {
-      lat: 7.9333,
-      lng: 9.7833,
-      accuracy: 12,
-      address: 'Hostel B Gate, Federal University Wukari, Taraba State',
-      city: 'Wukari',
-      timestamp: new Date(Date.now() - 1000 * 60 * 25), // 25 mins ago
-    },
-    batteryLevel: 84,
-    protectionCertificateNumber: 'NM-SEC-924810',
-    carrier: 'MTN Nigeria'
-  },
-  {
-    id: '864920193847203',
-    ownerUid: 'demo_user_blessing',
-    ownerName: 'Blessing Chioma',
-    ownerPhone: '09012345678',
-    model: 'Apple iPhone 12 (Blue, 64GB)',
-    imei1: '864920193847203',
-    imei2: null,
-    imeis: ['864920193847203'],
-    status: 'protected',
-    isVerified: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
-    lastUpdated: new Date(Date.now() - 1000 * 60 * 5),
-    lastLocation: {
-      lat: 6.5244,
-      lng: 3.3792,
-      accuracy: 8,
-      address: 'Near Computer Village Bridge, Ikeja, Lagos',
-      city: 'Ikeja, Lagos',
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-    },
-    batteryLevel: 67,
-    protectionCertificateNumber: 'NM-SEC-104928',
-    carrier: 'Airtel NG'
-  }
-];
+// No fake device listings - real registered phones only
+export const DEMO_PROTECTED_PHONES: ProtectedPhone[] = [];
+export const DEMO_STOLEN_PHONES: StolenPhoneReport[] = [];
 
-export const DEMO_STOLEN_PHONES: StolenPhoneReport[] = [
-  {
-    id: '356789012345672',
-    imei: '356789012345672',
-    model: 'Tecno Camon 20 Pro 256GB',
-    whereStolen: 'Wukari Main Market bus stop',
-    dateStolen: '2026-03-15',
-    ownerPhone: '08139485721',
-    rewardAmount: 15000,
-    policeExtractNumber: 'CR/TAR/WUK/2026/0491',
-    status: 'stolen',
-    reportedAt: new Date(Date.now() - 1000 * 60 * 60 * 72),
-    description: 'Black with small crack on top right camera lens. Dispatched police extract.'
-  }
-];
 
 /**
  * Register a phone into Firestore collection "protected_phones"
@@ -355,12 +290,6 @@ export async function checkImeiBlacklist(imei: string): Promise<{
     console.warn('Check stolen phone error:', e);
   }
 
-  // Check demo stolen phones
-  if (!reportData) {
-    const demo = DEMO_STOLEN_PHONES.find((s) => s.imei === cleanImei);
-    if (demo) reportData = demo;
-  }
-
   // 2. Check protected_phones collection
   try {
     const protRef = doc(db, PROTECTED_PHONES_COLLECTION, cleanImei);
@@ -371,11 +300,6 @@ export async function checkImeiBlacklist(imei: string): Promise<{
     }
   } catch (e) {
     console.warn('Check protected phone error:', e);
-  }
-
-  if (!phoneData) {
-    const demo = DEMO_PROTECTED_PHONES.find((p) => p.id === cleanImei || p.imeis?.includes(cleanImei));
-    if (demo) phoneData = demo;
   }
 
   const isStolen = !!reportData || phoneData?.status === 'stolen';
@@ -669,24 +593,6 @@ export async function getTrackLogsForImei(imei: string): Promise<TrackLog[]> {
     } catch {
       // Ignore
     }
-  }
-
-  // Seed sample log if empty so owner sees UI immediately
-  if (results.length === 0) {
-    results.push({
-      id: 'demo_log_1',
-      imei: cleanImei,
-      timestamp: new Date(Date.now() - 1000 * 60 * 18),
-      userAgent: 'Mozilla/5.0 (Linux; Android 13; Mobile)',
-      ip: '197.210.54.12 (MTN Nigeria)',
-      city: 'Wukari, Taraba State',
-      lat: 7.9333,
-      lng: 9.7833,
-      accuracy: 14,
-      consentGiven: true,
-      status: 'location_shared',
-      note: 'Recovery Portal opened and location verified'
-    });
   }
 
   return results;

@@ -50,24 +50,18 @@ export const subscribeToSquatterBoard = (
         });
       });
 
-      // Merge with initial seeded items if liveList has few items
-      const combinedMap = new Map<string, SquatterItem>();
-      INITIAL_SQUATTER_ITEMS.forEach((item) => combinedMap.set(item.id, item as SquatterItem));
-      liveList.forEach((item) => combinedMap.set(item.id, item));
-
-      const finalItems = Array.from(combinedMap.values());
-      // Sort newest first
-      finalItems.sort((a, b) => {
+      // Real listings only
+      liveList.sort((a, b) => {
         const tA = a.created_at?.toDate ? a.created_at.toDate().getTime() : new Date(a.created_at).getTime() || 0;
         const tB = b.created_at?.toDate ? b.created_at.toDate().getTime() : new Date(b.created_at).getTime() || 0;
         return tB - tA;
       });
 
-      onData(finalItems);
+      onData(liveList);
     },
     (err) => {
-      console.warn('Squatter board Firestore listener error, using local data:', err);
-      onData(INITIAL_SQUATTER_ITEMS as SquatterItem[]);
+      console.warn('Squatter board Firestore listener error:', err);
+      onData([]);
     }
   );
 

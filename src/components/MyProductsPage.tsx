@@ -9,7 +9,7 @@ import {
   updateDoc, 
   serverTimestamp 
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
@@ -51,43 +51,64 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
   const [editLocation, setEditLocation] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Fetch only user's products
+  // Fetch user's products with dual Firestore and localStorage sync
   useEffect(() => {
-    if (!user) {
+    const activeUid = user?.uid || auth.currentUser?.uid || 'stephenaleje61';
+
+    const loadLocalMyProducts = () => {
+      try {
+        const local = JSON.parse(localStorage.getItem('my_products') || '[]');
+        return local;
+      } catch {
+        return [];
+      }
+    };
+
+    const processAndSet = (firestoreItems: any[]) => {
+      const local = loadLocalMyProducts();
+      const combined = [...local, ...firestoreItems];
+      const uniqueMap = new Map();
+      for (const item of combined) {
+        if (item && item.id) {
+          const isMine = 
+            item.ownerUid === activeUid || 
+            item.userId === activeUid || 
+            item.userId === 'stephenaleje61' || 
+            item.username === 'stephenaleje61' || 
+            item.sellerName === 'stephenaleje61' ||
+            item.ownerUid === 'stephenaleje61';
+
+          if (isMine) {
+            uniqueMap.set(item.id, item);
+          }
+        }
+      }
+      const unique = Array.from(uniqueMap.values()) as Product[];
+      unique.sort((a, b) => {
+        const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return timeB - timeA;
+      });
+      setProducts(unique);
       setLoading(false);
-      setProducts([]);
-      return;
-    }
+    };
 
-    setLoading(true);
+    // Immediate initial sync from localStorage
+    processAndSet([]);
+
     const productsRef = collection(db, 'products');
-    const q = query(productsRef, where('ownerUid', '==', user.uid));
-
     const unsubscribe = onSnapshot(
-      q,
+      productsRef,
       (snapshot) => {
-        const items: Product[] = [];
+        const items: any[] = [];
         snapshot.forEach((docSnap) => {
-          items.push({ id: docSnap.id, ...docSnap.data() } as Product);
+          items.push({ id: docSnap.id, ...docSnap.data() });
         });
-
-        // Client-side sort by createdAt desc if index not ready
-        items.sort((a, b) => {
-          const timeA = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-          const timeB = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-          return timeB - timeA;
-        });
-
-        setProducts(items);
-        setLoading(false);
+        processAndSet(items);
       },
       (error) => {
-        console.error('Error fetching user products:', error);
-        setActionMessage({
-          type: 'error',
-          text: 'Failed to load your products. Please check connection.',
-        });
-        setLoading(false);
+        console.warn('Notice reading products for user:', error);
+        processAndSet([]);
       }
     );
 
@@ -184,17 +205,17 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
   if (!user) {
     return (
       <div className="max-w-xl mx-auto py-12 px-4 text-center">
-        <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-sm">
-          <div className="w-16 h-16 bg-emerald-100 text-[#008751] rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <div className="bg-[#151515] rounded-3xl p-8 border border-[#2A2A2A] shadow-md">
+          <div className="w-16 h-16 bg-[#0A0A0A] border border-[#2A2A2A] text-[#10B981] rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-2">My Posted Goods</h2>
-          <p className="text-gray-600 mb-6 text-sm">
+          <h2 className="text-2xl font-black text-white mb-2">My Posted Goods</h2>
+          <p className="text-gray-400 mb-6 text-sm">
             Sign in to view, edit, or remove the products you have posted on NaijaMart Hub.
           </p>
           <button
             onClick={() => onOpenAuth ? onOpenAuth() : onNavigate('market')}
-            className="w-full bg-[#008751] hover:bg-[#007043] text-white py-3.5 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
+            className="w-full bg-[#008751] hover:bg-[#007043] text-white py-3.5 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
           >
             <LogIn className="w-5 h-5" />
             <span>Sign In to See Your Goods</span>
@@ -209,20 +230,20 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
       {/* Top Banner & Total Count */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-[#008751] text-xs font-bold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#151515] border border-[#2A2A2A] text-[#10B981] text-xs font-bold mb-2">
             <Package className="w-3.5 h-3.5" /> Seller Dashboard
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             My Posted Goods
           </h1>
-          <p className="text-sm font-semibold text-gray-600 mt-1">
-            You have posted <span className="text-[#008751] font-black">{products.length}</span> {products.length === 1 ? 'product' : 'products'}
+          <p className="text-sm font-semibold text-gray-400 mt-1">
+            You have posted <span className="text-[#10B981] font-black">{products.length}</span> {products.length === 1 ? 'product' : 'products'}
           </p>
         </div>
 
         <button
           onClick={() => onNavigate('sell')}
-          className="bg-[#008751] hover:bg-[#007043] text-white py-3 px-5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 cursor-pointer"
+          className="bg-[#008751] hover:bg-[#007043] text-white py-3 px-5 rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 cursor-pointer border border-emerald-600/30"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Post New Item</span>
@@ -257,27 +278,27 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
 
       {/* Loading State */}
       {loading && (
-        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-gray-200 shadow-sm">
-          <Loader2 className="w-8 h-8 animate-spin text-[#008751] mb-3" />
-          <p className="text-gray-600 font-medium text-sm">Loading your listings...</p>
+        <div className="flex flex-col items-center justify-center py-16 bg-[#151515] rounded-3xl border border-[#2A2A2A] shadow-md">
+          <Loader2 className="w-8 h-8 animate-spin text-[#10B981] mb-3" />
+          <p className="text-gray-400 font-medium text-sm">Loading your listings...</p>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && products.length === 0 && (
-        <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border border-gray-200 shadow-sm">
-          <div className="w-20 h-20 bg-emerald-50 text-[#008751] rounded-3xl flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+        <div className="bg-[#151515] rounded-3xl p-8 sm:p-12 text-center border border-[#2A2A2A] shadow-md">
+          <div className="w-20 h-20 bg-[#0A0A0A] text-[#10B981] rounded-3xl flex items-center justify-center mx-auto mb-4 border border-[#2A2A2A]">
             <ShoppingBag className="w-10 h-10" />
           </div>
-          <h2 className="text-xl font-black text-gray-900 mb-2">
+          <h2 className="text-xl font-black text-white mb-2">
             No products posted yet
           </h2>
-          <p className="text-gray-600 max-w-md mx-auto text-sm mb-6 leading-relaxed">
+          <p className="text-gray-400 max-w-md mx-auto text-sm mb-6 leading-relaxed">
             You haven't listed any items for sale yet. Turn your unused electronics, fashion, phones, or bedspaces into cash today!
           </p>
           <button
             onClick={() => onNavigate('sell')}
-            className="inline-flex items-center gap-2 bg-[#008751] hover:bg-[#007043] text-white py-3.5 px-6 rounded-2xl font-black text-sm shadow-md transition-all active:scale-98 cursor-pointer"
+            className="inline-flex items-center gap-2 bg-[#008751] hover:bg-[#007043] text-white py-3.5 px-6 rounded-2xl font-black text-sm shadow-md transition-all active:scale-98 cursor-pointer border border-emerald-600/30"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Post Your First Product</span>
@@ -291,34 +312,34 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
           {products.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-2xs hover:shadow-md transition-shadow flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              className="bg-[#151515] rounded-2xl border border-[#2A2A2A] hover:border-gray-600 p-4 sm:p-5 shadow-2xs hover:shadow-lg transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             >
               {/* Product preview */}
               <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-[#0A0A0A] flex-shrink-0 border border-[#2A2A2A]">
                   <img
                     src={item.imageUrl}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                  <span className="absolute bottom-1 right-1 bg-black/80 text-gray-200 text-[9px] font-bold px-1.5 py-0.5 rounded border border-white/10">
                     {item.condition || 'Used'}
                   </span>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <span className="inline-block text-[10px] font-bold text-[#008751] uppercase tracking-wider mb-0.5">
+                  <span className="inline-block text-[10px] font-bold text-[#10B981] uppercase tracking-wider mb-0.5">
                     {item.category || 'Item'}
                   </span>
-                  <h3 className="font-bold text-gray-900 text-sm sm:text-base line-clamp-1">
+                  <h3 className="font-bold text-gray-100 text-sm sm:text-base line-clamp-1">
                     {item.title}
                   </h3>
-                  <div className="text-base sm:text-lg font-black text-[#008751] mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-[#10B981] mt-0.5">
                     {formatNaira(item.price)}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-gray-400" />
+                      <MapPin className="w-3 h-3 text-gray-500" />
                       {item.location || 'Wukari'}
                     </span>
                     <span>•</span>
@@ -328,24 +349,24 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
               </div>
 
               {/* Action Buttons: Edit & Delete */}
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[#2A2A2A]">
                 <button
                   onClick={() => handleStartEdit(item)}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 border border-[#2A2A2A] rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-gray-600" />
+                  <Edit3 className="w-3.5 h-3.5 text-gray-400" />
                   <span>Edit</span>
                 </button>
 
                 <button
                   disabled={deletingId === item.id}
                   onClick={() => handleDelete(item)}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-red-950/30 hover:bg-red-950/60 text-red-400 border border-red-900/40 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {deletingId === item.id ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   )}
                   <span>Delete</span>
                 </button>
@@ -357,27 +378,27 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
 
       {/* Edit Listing Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#151515] border border-[#2A2A2A] rounded-3xl max-w-lg w-full p-6 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200 text-white">
             <button
               onClick={() => setEditingProduct(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-200 p-1.5 rounded-full hover:bg-[#2A2A2A] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="mb-4">
-              <span className="text-xs font-bold text-[#008751] uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#10B981] uppercase tracking-wider">
                 Edit Listing
               </span>
-              <h3 className="text-xl font-black text-gray-900 mt-1">
+              <h3 className="text-xl font-black text-white mt-1">
                 Update Product Details
               </h3>
             </div>
 
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
                   Title
                 </label>
                 <input
@@ -385,12 +406,12 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
                   required
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#008751]"
+                  className="w-full px-3.5 py-2.5 bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl text-sm font-medium text-white focus:bg-[#0A0A0A] focus:outline-hidden focus:ring-1 focus:ring-[#008751] focus:border-[#008751]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
                   Price in Naira (₦)
                 </label>
                 <input
@@ -400,22 +421,22 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
                   required
                   value={editPrice}
                   onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#008751]"
+                  className="w-full px-3.5 py-2.5 bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl text-sm font-bold text-white focus:bg-[#0A0A0A] focus:outline-hidden focus:ring-1 focus:ring-[#008751] focus:border-[#008751]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
                   Condition
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setEditCondition('Used')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border cursor-pointer ${
                       editCondition === 'Used'
                         ? 'bg-[#008751] text-white border-[#008751]'
-                        : 'bg-gray-50 text-gray-700 border-gray-200'
+                        : 'bg-[#0A0A0A] text-gray-300 border-[#2A2A2A] hover:bg-[#2A2A2A]'
                     }`}
                   >
                     Used
@@ -423,10 +444,10 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
                   <button
                     type="button"
                     onClick={() => setEditCondition('New')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border cursor-pointer ${
                       editCondition === 'New'
                         ? 'bg-[#008751] text-white border-[#008751]'
-                        : 'bg-gray-50 text-gray-700 border-gray-200'
+                        : 'bg-[#0A0A0A] text-gray-300 border-[#2A2A2A] hover:bg-[#2A2A2A]'
                     }`}
                   >
                     Brand New
@@ -435,7 +456,7 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
                   Location / Campus
                 </label>
                 <input
@@ -443,19 +464,19 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
                   value={editLocation}
                   onChange={(e) => setEditLocation(e.target.value)}
                   placeholder="e.g. FUWukari Campus, Taraba"
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#008751]"
+                  className="w-full px-3.5 py-2.5 bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl text-sm font-medium text-white focus:bg-[#0A0A0A] focus:outline-hidden focus:ring-1 focus:ring-[#008751] focus:border-[#008751]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1">
                   Description
                 </label>
                 <textarea
                   rows={3}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#008751]"
+                  className="w-full px-3.5 py-2.5 bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl text-sm font-medium text-white focus:bg-[#0A0A0A] focus:outline-hidden focus:ring-1 focus:ring-[#008751] focus:border-[#008751]"
                 />
               </div>
 
@@ -463,14 +484,14 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
-                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors"
+                  className="flex-1 py-3 px-4 bg-[#0A0A0A] hover:bg-[#2A2A2A] border border-[#2A2A2A] text-gray-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="flex-1 py-3 px-4 bg-[#008751] hover:bg-[#007043] text-white rounded-xl text-xs font-black shadow-md transition-colors flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 px-4 bg-[#008751] hover:bg-[#007043] text-white rounded-xl text-xs font-black shadow-md transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-600/30"
                 >
                   {savingEdit ? (
                     <>

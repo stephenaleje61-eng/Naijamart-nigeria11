@@ -1,0 +1,46 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Product and business images (Publicly readable, authenticated write)
+    match /products/{uid}/{allImages=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Farm produce images
+    match /farm/{uid}/{allImages=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Job applicant CV uploads (PDF / DOC max 5MB)
+    match /cvs/{uid}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == uid
+                   && request.resource.size <= 5 * 1024 * 1024;
+    }
+
+    // Freelancer portfolio images
+    match /portfolios/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default catch-all for existing app
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+  }
+}

@@ -19,17 +19,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     product.category?.toLowerCase().includes('okada') ||
     product.category?.toLowerCase().includes('motorcycle');
 
-  // Format clean phone for tel: and WhatsApp (defaults to 08167258121)
-  const rawPhone = product.phoneNumber || product.ownerPhone || '08167258121';
+  // Format clean phone for tel: and WhatsApp
+  const rawPhone = product.phoneNumber || product.ownerPhone || product.whatsappNumber || '';
   const cleanPhone = rawPhone.replace(/[^0-9+]/g, '');
 
-  const rawWhatsapp = product.whatsappNumber || product.ownerPhone || product.phoneNumber || '08167258121';
+  const rawWhatsapp = product.whatsappNumber || product.ownerPhone || product.phoneNumber || '';
   const cleanDigits = rawWhatsapp.replace(/[^0-9]/g, '');
   const formattedWhatsapp = cleanDigits.startsWith('0')
     ? '234' + cleanDigits.substring(1)
     : cleanDigits.startsWith('234')
     ? cleanDigits
-    : '234' + cleanDigits;
+    : cleanDigits ? '234' + cleanDigits : '';
 
   const discountPercent =
     product.discountPercent ||
@@ -44,11 +44,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className="group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
+      className="group bg-[#151515] rounded-2xl border border-[#2A2A2A] overflow-hidden shadow-2xs hover:shadow-lg hover:border-[#10B981] transition-all duration-200 cursor-pointer flex flex-col justify-between text-[#EDEDED]"
     >
       <div>
         {/* Image Container with Temu Discount Badge */}
-        <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
+        <div className="relative aspect-square w-full bg-[#0A0A0A] overflow-hidden">
           <img
             src={product.imageUrl}
             alt={product.title}
@@ -62,7 +62,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               -{discountPercent}%
             </span>
             {isOkada && (
-              <span className="bg-black/80 backdrop-blur-xs text-yellow-300 text-[9px] font-black px-1.5 py-0.5 rounded">
+              <span className="bg-black/80 backdrop-blur-xs text-yellow-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-[#2A2A2A]">
                 🏍️ OKADA
               </span>
             )}
@@ -70,7 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Condition / Papers Badge (Top Right) */}
           <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
-            <span className="bg-white/95 backdrop-blur-xs text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200 shadow-2xs">
+            <span className="bg-[#151515]/95 backdrop-blur-xs text-gray-200 text-[10px] font-bold px-2 py-0.5 rounded-md border border-[#2A2A2A] shadow-2xs">
               {product.condition || 'Used'}
             </span>
             {isOkada && product.papers && (
@@ -88,7 +88,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
           {/* Free Delivery / Direct Inspection Green Tag */}
           <div className="absolute bottom-2 left-2 z-10">
-            <span className="bg-[#008751]/95 text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs flex items-center gap-1">
+            <span className="bg-[#008751]/95 text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs flex items-center gap-1 border border-emerald-600/30">
               <ShieldCheck className="w-3 h-3" /> Direct Meetup
             </span>
           </div>
@@ -97,53 +97,55 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Content Details */}
         <div className="p-3 sm:p-3.5">
           {/* Title truncated to 2 lines */}
-          <h3 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-2 leading-snug group-hover:text-[#008751] transition-colors mb-1.5">
+          <h3 className="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-snug group-hover:text-[#10B981] transition-colors mb-1.5">
             {product.title}
           </h3>
 
           {/* Price Row (Temu / Jumia pricing style) */}
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="text-base sm:text-lg font-black text-[#008751] tracking-tight">
+            <span className="text-base sm:text-lg font-black text-[#10B981] tracking-tight">
               {formatNaira(product.price)}
             </span>
-            <span className="text-[11px] text-gray-400 line-through">
+            <span className="text-[11px] text-gray-500 line-through">
               {formatNaira(originalPrice)}
             </span>
           </div>
 
           {/* Temu-style "Almost Sold Out" stock progress bar */}
           <div className="mt-1.5 mb-2">
-            <div className="flex items-center justify-between text-[10px] text-gray-500 mb-0.5 font-medium">
+            <div className="flex items-center justify-between text-[10px] text-gray-400 mb-0.5 font-medium">
               <span className="flex items-center gap-1 text-[#fb6514] font-bold">
                 <Flame className="w-3 h-3 fill-[#fb6514]" /> High Demand
               </span>
-              <span className="text-gray-400">Verified seller</span>
+              <span className="text-gray-500">Verified seller</span>
             </div>
-            <div className="w-full bg-orange-100 rounded-full h-1.5 overflow-hidden">
+            <div className="w-full bg-[#0A0A0A] rounded-full h-1.5 overflow-hidden border border-[#2A2A2A]">
               <div className="bg-[#fb6514] h-1.5 rounded-full w-4/5" />
             </div>
           </div>
 
           {/* Location & Time */}
-          <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1.5 border-t border-gray-100">
+          <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1.5 border-t border-[#2A2A2A]">
             <span className="flex items-center gap-1 truncate max-w-[130px]">
-              <MapPin className="w-3 h-3 text-[#008751] flex-shrink-0" />
+              <MapPin className="w-3 h-3 text-[#10B981] shrink-0" />
               <span className="truncate">{product.location || 'Wukari, Taraba'}</span>
             </span>
-            <span className="text-[10px] text-gray-400 flex-shrink-0">
+            <span className="text-[10px] text-gray-500 shrink-0">
               {formatTimeAgo(product.createdAt)}
             </span>
           </div>
 
           {/* Seller Phone Display */}
-          <div className="mt-1.5 flex items-center justify-between text-[11px] bg-gray-50 px-2 py-1 rounded-lg border border-gray-200">
-            <span className="font-semibold text-gray-700 truncate max-w-[100px]">
-              {product.sellerName || 'Seller'}
-            </span>
-            <span className="font-mono text-gray-900 font-bold text-[11px]">
-              📞 {cleanPhone || 'Contact'}
-            </span>
-          </div>
+          {cleanPhone && (
+            <div className="mt-1.5 flex items-center justify-between text-[11px] bg-[#0A0A0A] px-2 py-1 rounded-lg border border-[#2A2A2A]">
+              <span className="font-semibold text-gray-300 truncate max-w-[100px]">
+                {product.sellerName || 'Seller'}
+              </span>
+              <span className="font-mono text-emerald-400 font-bold text-[11px]">
+                📞 {cleanPhone}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -155,9 +157,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               e.stopPropagation();
               onBargainClick(product);
             }}
-            className="w-full bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-300 py-1.5 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors shadow-2xs active:scale-98"
+            className="w-full bg-[#0A0A0A] hover:bg-[#2A2A2A] text-emerald-400 border border-[#2A2A2A] py-1.5 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors shadow-2xs active:scale-98 cursor-pointer"
           >
-            <Handshake className="w-3.5 h-3.5 text-[#008751]" />
+            <Handshake className="w-3.5 h-3.5 text-emerald-400" />
             <span>🤝 Bargain Offer</span>
           </button>
         )}
@@ -167,27 +169,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <a
             href={`tel:${cleanPhone}`}
             onClick={(e) => e.stopPropagation()}
-            className="bg-gray-900 hover:bg-black text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
+            className="bg-[#0A0A0A] hover:bg-[#2A2A2A] text-white border border-[#2A2A2A] py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-colors"
           >
-            <Phone className="w-3.5 h-3.5 text-emerald-400" />
+            <Phone className="w-3.5 h-3.5 text-[#10B981]" />
             <span>Call Seller</span>
           </a>
 
-        {/* WhatsApp Button */}
-        <a
-          href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-            `Hello ${product.sellerName || 'Seller'}, I am contacting you from NaijaMarket Hub regarding "${product.title}" listed for ${formatNaira(
-              product.price
-            )} in ${product.location || 'Nigeria'}. Is it still available?`
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span>WhatsApp</span>
-        </a>
+          {/* WhatsApp Button */}
+          <a
+            href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
+              `Hello ${product.sellerName || 'Seller'}, I am contacting you from NaijaMarket Hub regarding "${product.title}" listed for ${formatNaira(
+                product.price
+              )} in ${product.location || 'Nigeria'}. Is it still available?`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>WhatsApp</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>

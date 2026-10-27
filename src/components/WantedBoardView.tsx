@@ -419,15 +419,6 @@ export const WantedBoardView: React.FC<WantedBoardViewProps> = ({
               <PlusCircle className="w-4 h-4" />
               <span>Post What You Need</span>
             </button>
-
-            {onSeedSampleRequests && wantedItems.length === 0 && (
-              <button
-                onClick={onSeedSampleRequests}
-                className="w-full sm:w-auto px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-[#008751] rounded-xl text-xs font-bold border border-emerald-200 transition-colors"
-              >
-                Load Sample Campus Requests
-              </button>
-            )}
           </div>
         </div>
       ) : (
