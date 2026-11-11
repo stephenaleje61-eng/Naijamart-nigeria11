@@ -23,6 +23,7 @@ import {
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
+import { SafeImage } from './SafeImage';
 import { useStudent } from '../context/StudentContext';
 
 interface ProductDetailsModalProps {
@@ -115,10 +116,12 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
             {/* Gallery Left Column (7 cols) */}
             <div className="lg:col-span-7 flex flex-col gap-3">
               {/* Main Image */}
-              <div className="relative aspect-square sm:aspect-[4/3] w-full rounded-2xl bg-zinc-950 overflow-hidden border border-gray-200 shadow-xs flex items-center justify-center">
-                <img
+              <div className="relative aspect-square sm:aspect-[4/3] w-full rounded-2xl bg-zinc-950 overflow-hidden border border-[#2A2A2A] shadow-xs flex items-center justify-center">
+                <SafeImage
                   src={imagesList[activeImageIndex] || product.imageUrl}
                   alt={product.title}
+                  fallbackCategory={isOkada ? 'vehicle' : product.category}
+                  priority={true}
                   className="w-full h-full object-contain"
                 />
 
@@ -129,7 +132,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       onClick={() =>
                         setActiveImageIndex((prev) => (prev === 0 ? imagesList.length - 1 : prev - 1))
                       }
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/85"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/85 cursor-pointer z-10"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -137,7 +140,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       onClick={() =>
                         setActiveImageIndex((prev) => (prev === imagesList.length - 1 ? 0 : prev + 1))
                       }
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/85"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/85 cursor-pointer z-10"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -145,7 +148,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                 )}
 
                 {/* Badge Overlay */}
-                <div className="absolute top-3 left-3 flex gap-1.5">
+                <div className="absolute top-3 left-3 flex gap-1.5 z-10">
                   <span className="bg-[#fb6514] text-white text-xs font-black px-2.5 py-1 rounded-lg shadow-sm">
                     {product.condition || 'Used'}
                   </span>
@@ -164,13 +167,19 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                     <button
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 flex-shrink-0 transition-all cursor-pointer ${
                         activeImageIndex === idx
                           ? 'border-[#fb6514] scale-105 shadow-xs'
-                          : 'border-gray-200 opacity-70 hover:opacity-100'
+                          : 'border-[#2A2A2A] opacity-70 hover:opacity-100'
                       }`}
                     >
-                      <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                      <SafeImage
+                        src={imgUrl}
+                        alt={`Thumbnail ${idx + 1}`}
+                        fallbackCategory={isOkada ? 'vehicle' : product.category}
+                        aspectRatio="aspect-square"
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -380,8 +389,14 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                     onClick={() => onSelectRelatedProduct(rel)}
                     className="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-all"
                   >
-                    <div className="aspect-square bg-gray-100 overflow-hidden">
-                      <img src={rel.imageUrl} alt={rel.title} className="w-full h-full object-cover" />
+                    <div className="aspect-square bg-[#0A0A0A] overflow-hidden">
+                      <SafeImage
+                        src={rel.imageUrl}
+                        alt={rel.title}
+                        fallbackCategory={product.category}
+                        aspectRatio="aspect-square"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="p-2">
                       <p className="text-xs font-bold text-gray-900 truncate">{rel.title}</p>

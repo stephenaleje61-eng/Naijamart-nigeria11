@@ -2,6 +2,7 @@ import React from 'react';
 import { Phone, MessageSquare, MapPin, Bike, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { OkadaRider } from '../types';
 import { formatTimeAgo } from '../utils/formatters';
+import { SafeImage } from './SafeImage';
 
 interface RiderCardProps {
   rider: OkadaRider;
@@ -25,19 +26,12 @@ export const RiderCard: React.FC<RiderCardProps> = ({ rider }) => {
       <div>
         {/* Rider Picture with Status Badge */}
         <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
-          {rider.photoUrl ? (
-            <img
-              src={rider.photoUrl}
-              alt={rider.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-orange-50 text-orange-600">
-              <Bike className="w-12 h-12 mb-1" />
-              <span className="text-xs font-bold">Wukari Rider</span>
-            </div>
-          )}
+          <SafeImage
+            src={rider.photoUrl}
+            alt={rider.name}
+            fallbackCategory="vehicle"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
 
           {/* Availability Status Badge (Top Left) */}
           <div className="absolute top-2 left-2 z-10">

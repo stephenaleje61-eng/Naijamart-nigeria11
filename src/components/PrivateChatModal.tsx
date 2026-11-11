@@ -30,6 +30,7 @@ import { useStudent } from '../context/StudentContext';
 import { formatNaira } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
 import { ChatMessage } from '../types';
+import { SafeImage } from './SafeImage';
 
 export const PrivateChatModal: React.FC = () => {
   const { 
@@ -278,9 +279,10 @@ export const PrivateChatModal: React.FC = () => {
             {/* Partner Avatar */}
             <div className="relative flex-shrink-0">
               {activeChatPartner.avatarUrl ? (
-                <img
+                <SafeImage
                   src={activeChatPartner.avatarUrl}
                   alt={activeChatPartner.fullName}
+                  fallbackCategory="avatar"
                   className="w-10 h-10 rounded-full object-cover border-2 border-emerald-300 shadow-xs"
                 />
               ) : (
@@ -437,10 +439,11 @@ export const PrivateChatModal: React.FC = () => {
           <div className="bg-white border-b border-gray-200 p-2 sm:p-2.5 flex items-center justify-between gap-2 shadow-xs">
             <div className="flex items-center gap-2 min-w-0">
               {activeProductContext.imageUrl && (
-                <img
+                <SafeImage
                   src={activeProductContext.imageUrl}
                   alt={activeProductContext.title}
-                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 flex-shrink-0"
+                  fallbackCategory="product"
+                  className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
                 />
               )}
               <div className="min-w-0">

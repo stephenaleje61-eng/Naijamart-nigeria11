@@ -16,6 +16,7 @@ import { db } from '../firebase';
 import { WUKARI_AREAS } from '../data/constants';
 import { OkadaRider } from '../types';
 import { useToast } from '../context/ToastContext';
+import { SafeImage } from './SafeImage';
 
 interface PostRiderModalProps {
   isOpen: boolean;
@@ -241,7 +242,7 @@ export const PostRiderModal: React.FC<PostRiderModalProps> = ({
 
             {photoUrl ? (
               <div className="relative w-28 h-28 rounded-2xl overflow-hidden border-2 border-[#fb6514] shadow-xs">
-                <img src={photoUrl} alt="Rider preview" className="w-full h-full object-cover" />
+                <SafeImage src={photoUrl} alt="Rider preview" fallbackCategory="vehicle" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={removePhoto}

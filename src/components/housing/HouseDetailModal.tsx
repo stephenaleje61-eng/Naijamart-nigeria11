@@ -23,6 +23,7 @@ import {
   Trash2,
   CheckCircle2
 } from 'lucide-react';
+import { SafeImage } from '../SafeImage';
 import { HouseListing } from '../../types/housing';
 import { 
   reportListing, 
@@ -213,9 +214,11 @@ export const HouseDetailModal: React.FC<HouseDetailModalProps> = ({
           <div className="relative rounded-2xl overflow-hidden bg-gray-950 aspect-16/10 flex items-center justify-center">
             {photos.length > 0 ? (
               <>
-                <img
+                <SafeImage
                   src={photos[activePhotoIdx]}
                   alt={house.title}
+                  fallbackCategory="house"
+                  priority={true}
                   className="w-full h-full object-cover"
                 />
                 {photos.length > 1 && (
@@ -257,7 +260,7 @@ export const HouseDetailModal: React.FC<HouseDetailModalProps> = ({
                     activePhotoIdx === idx ? 'border-[#075E54] scale-105' : 'border-transparent opacity-70'
                   }`}
                 >
-                  <img src={p} alt="" className="w-full h-full object-cover" />
+                  <SafeImage src={p} alt={`Photo ${idx + 1}`} fallbackCategory="house" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -363,7 +366,7 @@ export const HouseDetailModal: React.FC<HouseDetailModalProps> = ({
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-[#075E54] font-black flex items-center justify-center text-lg overflow-hidden border border-emerald-300">
                   {house.agentPhoto ? (
-                    <img src={house.agentPhoto} alt="" className="w-full h-full object-cover" />
+                    <SafeImage src={house.agentPhoto} alt={house.agentName} fallbackCategory="avatar" className="w-full h-full object-cover" />
                   ) : (
                     house.agentName.charAt(0).toUpperCase()
                   )}

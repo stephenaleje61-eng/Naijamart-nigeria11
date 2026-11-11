@@ -23,6 +23,7 @@ import { CAMPUSES, WANTED_CATEGORIES, CAMPUS_LOCATIONS_WUKARI } from '../data/co
 import { WantedItem } from '../types';
 import { useToast } from '../context/ToastContext';
 import { useStudent } from '../context/StudentContext';
+import { SafeImage } from './SafeImage';
 import { compressImageToBase64 } from '../utils/imageCompressor';
 
 interface PostWantedModalProps {
@@ -245,7 +246,7 @@ export const PostWantedModal: React.FC<PostWantedModalProps> = ({
             <div className="flex items-center gap-3">
               <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-emerald-500 bg-gray-100 flex-shrink-0 flex items-center justify-center shadow-xs">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <SafeImage src={avatarUrl} alt="Preview" fallbackCategory="avatar" className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-7 h-7 text-gray-400" />
                 )}
@@ -519,7 +520,7 @@ export const PostWantedModal: React.FC<PostWantedModalProps> = ({
 
             {sampleImageUrl ? (
               <div className="relative w-32 h-24 rounded-2xl overflow-hidden border border-emerald-400 shadow-xs">
-                <img src={sampleImageUrl} alt="Sample" className="w-full h-full object-cover" />
+                <SafeImage src={sampleImageUrl} alt="Sample" fallbackCategory="product" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={() => setSampleImageUrl('')}

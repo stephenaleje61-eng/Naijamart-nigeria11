@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
+import { SafeImage } from './SafeImage';
 
 interface MyAdsModalProps {
   isOpen: boolean;
@@ -93,10 +94,11 @@ export const MyAdsModal: React.FC<MyAdsModalProps> = ({
                 className="bg-white border border-gray-200 rounded-xl p-3 flex items-center justify-between gap-3 hover:shadow-xs transition-shadow cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <img
+                  <SafeImage
                     src={prod.imageUrl}
                     alt={prod.title}
-                    className="w-14 h-14 rounded-xl object-cover bg-gray-100 flex-shrink-0"
+                    fallbackCategory={prod.category}
+                    className="w-14 h-14 rounded-xl object-cover bg-gray-100 shrink-0"
                   />
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">

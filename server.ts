@@ -67,7 +67,7 @@ Output strictly a JSON object with this exact structure:
       );
 
       const generatePromise = ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -130,7 +130,7 @@ Format your output strictly as a JSON object:
       );
 
       const generatePromise = ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',

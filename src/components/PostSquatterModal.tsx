@@ -20,6 +20,7 @@ import { createSquatterPost } from '../services/squatterService';
 import { useToast } from '../context/ToastContext';
 import { useStudent } from '../context/StudentContext';
 import { SquatterItem } from '../types';
+import { SafeImage } from './SafeImage';
 
 interface PostSquatterModalProps {
   isOpen: boolean;
@@ -330,7 +331,7 @@ export const PostSquatterModal: React.FC<PostSquatterModalProps> = ({
             <div className="grid grid-cols-3 gap-2">
               {images.map((img, idx) => (
                 <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-300 group">
-                  <img src={img} alt="Hostel" className="w-full h-full object-cover" />
+                  <SafeImage src={img} alt={`Hostel ${idx + 1}`} fallbackCategory="house" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(idx)}

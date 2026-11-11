@@ -24,6 +24,12 @@ export const Footer: React.FC<FooterProps> = ({
                 src="/icon.png" 
                 alt="NaijaMarket Hub" 
                 className="w-8 h-8 rounded-lg object-contain bg-[#008751]" 
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (!target.src.endsWith('/icon.svg')) {
+                    target.src = '/icon.svg';
+                  }
+                }}
               />
               <span className="text-xl font-black text-white tracking-tight">
                 NaijaMarket <span className="text-[#008751]">Hub</span>

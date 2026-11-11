@@ -16,6 +16,7 @@ import { useStudent } from '../context/StudentContext';
 import { CAMPUSES, CAMPUS_LOCATIONS_WUKARI } from '../data/constants';
 import { compressImageToBase64 } from '../utils/imageCompressor';
 import { useToast } from '../context/ToastContext';
+import { SafeImage } from './SafeImage';
 
 export const StudentProfileModal: React.FC = () => {
   const { profile, updateProfile, isProfileModalOpen, setIsProfileModalOpen } = useStudent();
@@ -118,7 +119,7 @@ export const StudentProfileModal: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-500 bg-gray-100 flex-shrink-0 flex items-center justify-center shadow-xs">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                <SafeImage src={avatarUrl} alt="Avatar" fallbackCategory="avatar" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-8 h-8 text-gray-400" />
               )}

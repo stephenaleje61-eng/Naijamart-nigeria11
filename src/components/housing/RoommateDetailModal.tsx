@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { RoommateListing } from '../../types/housing';
 import { deleteRoommateListing, reportListing } from '../../services/housingService';
+import { SafeImage } from '../SafeImage';
 
 interface RoommateDetailModalProps {
   roommate: RoommateListing | null;
@@ -111,7 +112,7 @@ export const RoommateDetailModal: React.FC<RoommateDetailModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {roommate.photos.map((p, idx) => (
                 <div key={idx} className="aspect-4/3 rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
-                  <img src={p} alt="" className="w-full h-full object-cover" />
+                  <SafeImage src={p} alt="Room photo" fallbackCategory="roommate" className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>

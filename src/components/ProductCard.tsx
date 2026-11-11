@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, ShieldCheck, Phone, MessageSquare, Flame, CheckCircle, FileText, Handshake } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
+import { SafeImage } from './SafeImage';
 
 interface ProductCardProps {
   product: Product;
@@ -41,6 +42,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     product.originalPrice ||
     Math.round((product.price * (100 + discountPercent)) / 100);
 
+  const displayImage = product.imageUrl || (product.images && product.images[0]) || (product as any).coverImage;
+
   return (
     <div
       onClick={onClick}
@@ -49,11 +52,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div>
         {/* Image Container with Temu Discount Badge */}
         <div className="relative aspect-square w-full bg-[#0A0A0A] overflow-hidden">
-          <img
-            src={product.imageUrl}
+          <SafeImage
+            src={displayImage}
             alt={product.title}
+            fallbackCategory={isOkada ? 'vehicle' : product.category}
+            aspectRatio="aspect-square"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
           />
 
           {/* Temu Discount Badge (Top Left) */}
@@ -193,6 +197,5 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 };

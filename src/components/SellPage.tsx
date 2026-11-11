@@ -4,6 +4,8 @@ import { db, auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { uploadProductImages } from '../services/upload';
+import { getCategoryFallback } from '../utils/imageUtils';
+import { SafeImage } from './SafeImage';
 import { 
   PlusCircle, 
   Upload, 
@@ -120,9 +122,10 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
     const newId = 'prod_' + Date.now().toString();
 
     // Default image if no file was picked
+    const fallbackImage = getCategoryFallback(category);
     const initialImages = previewUrls.length > 0 
       ? previewUrls 
-      : ['https://images.unsplash.com/photo-1511707171634-5f897ff02526?w=600&auto=format&fit=crop&q=80'];
+      : [fallbackImage];
 
     // 1. INSTANT SHOW ON SUBMIT - ZERO SECOND DELAY
     // Auto-approve and hardcode user priority
@@ -176,7 +179,7 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
     // Step 4: Navigate to homepage/market IMMEDIATELY (no waiting for Firebase)
     onNavigate('market');
 
-    // Step 5: Send to Firebase in background with .catch(err => console.log(err))
+    // Step 5: Send to Firebase in background with permanent URL sync
     const filesToUpload = [...selectedFiles];
     (async () => {
       try {
@@ -184,6 +187,38 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
         if (filesToUpload.length > 0) {
           try {
             cloudUrls = await uploadProductImages(filesToUpload, uid, () => {});
+            // If cloud URLs obtained, update localStorage so future refreshes use the permanent URLs
+            if (cloudUrls.length > 0) {
+              const syncKey = (key: string) => {
+                try {
+                  const arr = JSON.parse(localStorage.getItem(key) || '[]');
+                  const updatedArr = arr.map((item: any) => {
+                    if (item && item.id === newId) {
+                      return {
+                        ...item,
+                        images: cloudUrls,
+                        coverImage: cloudUrls[0],
+                        imageUrl: cloudUrls[0]
+                      };
+                    }
+                    return item;
+                  });
+                  localStorage.setItem(key, JSON.stringify(updatedArr));
+                } catch {
+                  // Ignore parse error
+                }
+              };
+              syncKey('my_products');
+              syncKey('cached_products');
+              window.dispatchEvent(new CustomEvent('localProductAdded', {
+                detail: {
+                  ...newProduct,
+                  images: cloudUrls,
+                  coverImage: cloudUrls[0],
+                  imageUrl: cloudUrls[0]
+                }
+              }));
+            }
           } catch (uploadErr) {
             console.warn('Background image upload notice:', uploadErr);
           }
@@ -385,7 +420,7 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-3">
             {previewUrls.map((url, index) => (
               <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border border-[#2A2A2A] group bg-[#0A0A0A]">
-                <img src={url} alt={`preview ${index}`} className="w-full h-full object-cover" />
+                <SafeImage src={url} alt={`preview ${index + 1}`} fallbackCategory={category} className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={() => removeImage(index)}

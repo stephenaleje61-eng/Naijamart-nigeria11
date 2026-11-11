@@ -21,6 +21,7 @@ import {
 import { useStudent } from '../context/StudentContext';
 import { useToast } from '../context/ToastContext';
 import { formatTimeAgo } from '../utils/formatters';
+import { SafeImage } from './SafeImage';
 
 interface ChatViewProps {
   onNavigateHome?: () => void;
@@ -419,9 +420,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
                           {partnerData.avatarUrl ? (
-                            <img
+                            <SafeImage
                               src={partnerData.avatarUrl}
                               alt={partnerData.name}
+                              fallbackCategory="avatar"
                               className="w-12 h-12 rounded-full object-cover border-2 border-emerald-400 shadow-xs"
                             />
                           ) : (

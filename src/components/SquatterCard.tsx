@@ -15,6 +15,7 @@ import { SquatterItem } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useStudent } from '../context/StudentContext';
 import { useToast } from '../context/ToastContext';
+import { SafeImage } from './SafeImage';
 
 interface SquatterCardProps {
   item: SquatterItem;
@@ -54,12 +55,12 @@ export const SquatterCard: React.FC<SquatterCardProps> = ({ item }) => {
     <div className="bg-white rounded-2xl border border-gray-200 hover:border-emerald-300 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between group">
       <div>
         {/* Card Header Image with Badges */}
-        <div className="relative aspect-[16/10] bg-gray-900 overflow-hidden">
-          <img 
+        <div className="relative aspect-16/10 bg-gray-900 overflow-hidden">
+          <SafeImage 
             src={displayImage} 
             alt={item.location} 
+            fallbackCategory="house"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
 

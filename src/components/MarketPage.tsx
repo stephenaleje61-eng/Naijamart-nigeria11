@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { Search, PlusCircle, Phone, MessageSquare, ShoppingBag, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { SafeImage } from "./SafeImage";
+import { sanitizeStoredProductImages, getCategoryFallback } from "../utils/imageUtils";
 
 export default function MarketPage({ onNavigate }: any) {
   const [products, setProducts] = useState<any[]>([]);
@@ -317,11 +319,12 @@ export default function MarketPage({ onNavigate }: any) {
               <div key={p.id} className="bg-[#151515] rounded-2xl border border-[#2A2A2A] hover:border-gray-600 overflow-hidden shadow-2xs hover:shadow-lg transition-all flex flex-col justify-between p-3">
                 <div>
                   <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#2A2A2A]/50 mb-2.5">
-                    <img 
-                      src={p.images?.[0] || p.imageUrl || p.coverImage || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80"} 
+                    <SafeImage 
+                      src={p.images?.[0] || p.imageUrl || p.coverImage} 
                       alt={p.title} 
+                      fallbackCategory={p.category}
+                      aspectRatio="aspect-square"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      loading="lazy" 
                     />
                     <div className="absolute top-2 left-2 flex flex-col gap-1">
                       <span className="bg-black/80 border border-white/10 backdrop-blur-xs text-gray-200 text-[10px] font-bold px-2 py-0.5 rounded-md">

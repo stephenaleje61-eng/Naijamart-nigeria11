@@ -20,6 +20,7 @@ import {
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
+import { SafeImage } from './SafeImage';
 
 interface BargainMessage {
   id: string;
@@ -319,10 +320,11 @@ export const BargainChatModal: React.FC<BargainChatModalProps> = ({
           <div className="flex items-center justify-between gap-2">
             {/* Product Thumbnail & Price Comparison */}
             <div className="flex items-center gap-2.5 min-w-0">
-              <img
+              <SafeImage
                 src={product.imageUrl}
                 alt={product.title}
-                className="w-11 h-11 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+                fallbackCategory={product.category}
+                className="w-11 h-11 rounded-xl object-cover border border-gray-200 shrink-0"
               />
               <div className="min-w-0">
                 <h4 className="text-xs font-bold text-gray-900 truncate max-w-[170px] sm:max-w-xs">

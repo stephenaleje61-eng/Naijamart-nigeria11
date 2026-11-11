@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { deleteProductImageFromStorage } from '../utils/imageUpload';
+import { SafeImage } from './SafeImage';
 import { 
   Package, 
   PlusCircle, 
@@ -317,9 +318,11 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
               {/* Product preview */}
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-[#0A0A0A] flex-shrink-0 border border-[#2A2A2A]">
-                  <img
-                    src={item.imageUrl}
+                  <SafeImage
+                    src={item.imageUrl || (item.images && item.images[0])}
                     alt={item.title}
+                    fallbackCategory={item.category}
+                    aspectRatio="aspect-square"
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-1 right-1 bg-black/80 text-gray-200 text-[9px] font-bold px-1.5 py-0.5 rounded border border-white/10">

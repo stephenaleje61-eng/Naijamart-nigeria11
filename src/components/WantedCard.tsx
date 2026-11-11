@@ -17,6 +17,7 @@ import {
 import { WantedItem } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useStudent } from '../context/StudentContext';
+import { SafeImage } from './SafeImage';
 
 interface WantedCardProps {
   item: WantedItem;
@@ -81,9 +82,10 @@ export const WantedCard: React.FC<WantedCardProps> = ({
             {/* Student Avatar */}
             <div className="relative flex-shrink-0">
               {item.avatarUrl ? (
-                <img 
+                <SafeImage 
                   src={item.avatarUrl} 
                   alt={item.buyerName} 
+                  fallbackCategory="avatar"
                   className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-emerald-500 shadow-2xs"
                 />
               ) : (
@@ -153,9 +155,10 @@ export const WantedCard: React.FC<WantedCardProps> = ({
           {/* Sample Image if buyer attached a reference picture */}
           {item.sampleImageUrl && (
             <div className="mt-2.5 rounded-xl overflow-hidden border border-gray-200 max-h-48 bg-gray-100">
-              <img 
+              <SafeImage 
                 src={item.sampleImageUrl} 
                 alt={item.itemWanted} 
+                fallbackCategory="product"
                 className="w-full h-40 object-cover hover:scale-105 transition-transform cursor-pointer"
                 onClick={() => onIHaveThis(item)}
               />

@@ -23,6 +23,7 @@ import {
   POPULAR_NIGERIAN_STATES 
 } from '../../types/housing';
 import { createHouseListing, uploadHousingImages } from '../../services/housingService';
+import { SafeImage } from '../SafeImage';
 
 interface PostHouseModalProps {
   isOpen: boolean;
@@ -448,9 +449,10 @@ export const PostHouseModal: React.FC<PostHouseModalProps> = ({
                   key={idx}
                   className="relative aspect-4/3 rounded-xl overflow-hidden border border-gray-200 group bg-gray-100"
                 >
-                  <img
+                  <SafeImage
                     src={url}
                     alt={`Upload ${idx + 1}`}
+                    fallbackCategory="house"
                     className="w-full h-full object-cover"
                   />
                   <button

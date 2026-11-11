@@ -41,6 +41,7 @@ import { PostRoommateModal } from './PostRoommateModal';
 import { HouseDetailModal } from './HouseDetailModal';
 import { RoommateDetailModal } from './RoommateDetailModal';
 import { AdminHousingModal } from './AdminHousingModal';
+import { SafeImage } from '../SafeImage';
 
 interface HousesViewProps {
   onStartChat?: (agent: { uid: string; name: string; phone?: string; photo?: string }) => void;
@@ -525,18 +526,12 @@ export const HousesView: React.FC<HousesViewProps> = ({ onStartChat }) => {
                   >
                     {/* Cover Photo & Badges */}
                     <div className="relative aspect-16/10 bg-[#0A0A0A] overflow-hidden">
-                      {coverPhoto ? (
-                        <img
-                          src={coverPhoto}
-                          alt={house.title}
-                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-[#0A0A0A]">
-                          <Home className="w-10 h-10 stroke-[1.5]" />
-                          <span className="text-[10px] mt-1">Photo pending</span>
-                        </div>
-                      )}
+                      <SafeImage
+                        src={coverPhoto}
+                        alt={house.title}
+                        fallbackCategory="house"
+                        className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                      />
 
                       {/* Photo count badge */}
                       {hasPhotos && (
@@ -754,18 +749,12 @@ export const HousesView: React.FC<HousesViewProps> = ({ onStartChat }) => {
                   >
                     {/* Room Photo / Graphic */}
                     <div className="relative aspect-16/10 bg-[#0A0A0A] overflow-hidden">
-                      {hasPhoto ? (
-                        <img
-                          src={item.photos[0]}
-                          alt=""
-                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-[#0A0A0A]">
-                          <Users className="w-10 h-10 stroke-[1.5] text-emerald-600/50" />
-                          <span className="text-[10px] text-gray-400 mt-1">Roommate Search</span>
-                        </div>
-                      )}
+                      <SafeImage
+                        src={hasPhoto ? item.photos[0] : null}
+                        alt={item.posterName || 'Roommate'}
+                        fallbackCategory="roommate"
+                        className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                      />
 
                       {/* Gender Badge */}
                       <div className="absolute top-2.5 left-2.5">

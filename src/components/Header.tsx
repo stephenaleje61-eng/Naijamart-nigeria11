@@ -142,6 +142,12 @@ export const Header: React.FC<HeaderProps> = ({
             src="/icon.png" 
             alt="NaijaMarket Hub" 
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-xs bg-[#008751]" 
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              if (!target.src.endsWith('/icon.svg')) {
+                target.src = '/icon.svg';
+              }
+            }}
           />
           <div>
             <div className="flex items-center">

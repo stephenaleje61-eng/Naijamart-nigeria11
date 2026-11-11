@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { GenderPreference, POPULAR_NIGERIAN_STATES } from '../../types/housing';
 import { createRoommateListing, uploadHousingImages } from '../../services/housingService';
+import { SafeImage } from '../SafeImage';
 
 interface PostRoommateModalProps {
   isOpen: boolean;
@@ -355,9 +356,10 @@ export const PostRoommateModal: React.FC<PostRoommateModalProps> = ({
                   key={idx}
                   className="relative aspect-4/3 rounded-xl overflow-hidden border border-gray-200 bg-gray-100"
                 >
-                  <img
+                  <SafeImage
                     src={url}
                     alt={`Room preview ${idx + 1}`}
+                    fallbackCategory="roommate"
                     className="w-full h-full object-cover"
                   />
                   <button

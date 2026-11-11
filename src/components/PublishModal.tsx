@@ -17,6 +17,7 @@ import { CATEGORIES, OKADA_MODELS, NIGERIAN_LOCATIONS } from '../data/constants'
 import { Product } from '../types';
 import { useToast } from '../context/ToastContext';
 import { useStudent } from '../context/StudentContext';
+import { SafeImage } from './SafeImage';
 
 interface PublishModalProps {
   isOpen: boolean;
@@ -329,7 +330,7 @@ export const PublishModal: React.FC<PublishModalProps> = ({
               {/* Display converted Base64 images directly */}
               {images.map((b64, idx) => (
                 <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-                  <img src={b64} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                  <SafeImage src={b64} alt={`Upload ${idx + 1}`} fallbackCategory="product" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(idx)}
