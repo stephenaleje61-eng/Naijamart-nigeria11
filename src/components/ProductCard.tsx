@@ -1,20 +1,59 @@
-import React from 'react';
-import { MapPin, ShieldCheck, Phone, MessageSquare, Flame, CheckCircle, FileText, Handshake } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  MapPin, 
+  ShieldCheck, 
+  Phone, 
+  MessageSquare, 
+  Flame, 
+  CheckCircle, 
+  FileText, 
+  Handshake, 
+  Heart, 
+  MoreVertical, 
+  Flag, 
+  Star 
+} from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { SafeImage } from './SafeImage';
+import { isProductSaved, toggleSavedProduct } from '../services/favoritesService';
+import { getSellerReputation } from '../services/reputationService';
+import { useToast } from '../context/ToastContext';
 
 interface ProductCardProps {
   product: Product;
   onClick: () => void;
   onBargainClick?: (product: Product) => void;
+  onReportClick?: (product: Product) => void;
+  onRateClick?: (product: Product) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
   onBargainClick,
+  onReportClick,
+  onRateClick,
 }) => {
+  const { showToast } = useToast();
+  const [saved, setSaved] = useState<boolean>(() => isProductSaved(product.id));
+  const [showMenu, setShowMenu] = useState(false);
+
+  useEffect(() => {
+    const handleSavedChange = () => {
+      setSaved(isProductSaved(product.id));
+    };
+    window.addEventListener('savedProductsChanged', handleSavedChange);
+    return () => window.removeEventListener('savedProductsChanged', handleSavedChange);
+  }, [product.id]);
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isNowSaved = await toggleSavedProduct(product.id);
+    setSaved(isNowSaved);
+    showToast(isNowSaved ? 'Saved to your Wishlist ❤️' : 'Removed from Saved items', isNowSaved ? 'success' : 'info');
+  };
+
   const isOkada =
     product.isOkada ||
     product.category?.toLowerCase().includes('okada') ||
@@ -43,14 +82,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     Math.round((product.price * (100 + discountPercent)) / 100);
 
   const displayImage = product.imageUrl || (product.images && product.images[0]) || (product as any).coverImage;
+  const reputation = getSellerReputation((product as any).userId || (product as any).ownerUid, product.sellerName);
 
   return (
     <div
       onClick={onClick}
-      className="group bg-[#151515] rounded-2xl border border-[#2A2A2A] overflow-hidden shadow-2xs hover:shadow-lg hover:border-[#10B981] transition-all duration-200 cursor-pointer flex flex-col justify-between text-[#EDEDED]"
+      className="group bg-[#151515] rounded-2xl border border-[#2A2A2A] overflow-hidden shadow-2xs hover:shadow-lg hover:border-[#10B981] transition-all duration-200 cursor-pointer flex flex-col justify-between text-[#EDEDED] relative"
     >
       <div>
-        {/* Image Container with Temu Discount Badge */}
+        {/* Image Container with Heart Button, 3-dot Menu, & Badges */}
         <div className="relative aspect-square w-full bg-[#0A0A0A] overflow-hidden">
           <SafeImage
             src={displayImage}
@@ -60,6 +100,71 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
 
+          {/* Heart ❤️ Button (Top Right) */}
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            title={saved ? 'Remove from Saved' : 'Save Item'}
+            className="absolute top-2 right-2 z-20 p-2 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-xs transition-all cursor-pointer border border-white/10 active:scale-90"
+          >
+            <Heart
+              className={`w-4 h-4 transition-colors ${
+                saved ? 'fill-red-500 text-red-500 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.7)]' : 'text-white/80 hover:text-red-400'
+              }`}
+            />
+          </button>
+
+          {/* 3-Dot Action Menu Button (Top Right beside Heart) */}
+          <div className="absolute top-2 right-11 z-20">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+              title="More options"
+              className="p-2 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-xs text-white/80 hover:text-white transition-all cursor-pointer border border-white/10"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div 
+                className="absolute right-0 top-9 w-44 bg-[#1E1E1E] border border-[#333] rounded-2xl shadow-2xl py-1 z-30 animate-fade-in"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {onRateClick && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onRateClick(product);
+                    }}
+                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-amber-300 hover:bg-[#2A2A2A] flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>Rate Seller</span>
+                  </button>
+                )}
+
+                {onReportClick && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onReportClick(product);
+                    }}
+                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-red-400 hover:bg-[#2A2A2A] flex items-center gap-2 cursor-pointer transition-colors border-t border-[#2A2A2A]"
+                  >
+                    <Flag className="w-3.5 h-3.5 text-red-400" />
+                    <span>Report This Post</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Temu Discount Badge (Top Left) */}
           <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 items-start">
             <span className="bg-[#fb6514] text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md shadow-sm">
@@ -68,24 +173,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {isOkada && (
               <span className="bg-black/80 backdrop-blur-xs text-yellow-300 text-[9px] font-black px-1.5 py-0.5 rounded border border-[#2A2A2A]">
                 🏍️ OKADA
-              </span>
-            )}
-          </div>
-
-          {/* Condition / Papers Badge (Top Right) */}
-          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
-            <span className="bg-[#151515]/95 backdrop-blur-xs text-gray-200 text-[10px] font-bold px-2 py-0.5 rounded-md border border-[#2A2A2A] shadow-2xs">
-              {product.condition || 'Used'}
-            </span>
-            {isOkada && product.papers && (
-              <span
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded shadow-2xs ${
-                  product.papers === 'Complete'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-amber-600 text-white'
-                }`}
-              >
-                {product.papers === 'Complete' ? '✓ Papers OK' : 'No Full Papers'}
               </span>
             )}
           </div>
@@ -100,12 +187,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Content Details */}
         <div className="p-3 sm:p-3.5">
-          {/* Title truncated to 2 lines */}
+          {/* Title */}
           <h3 className="font-bold text-white text-xs sm:text-sm line-clamp-2 leading-snug group-hover:text-[#10B981] transition-colors mb-1.5">
             {product.title}
           </h3>
 
-          {/* Price Row (Temu / Jumia pricing style) */}
+          {/* Price Row */}
           <div className="flex items-baseline gap-2 mb-1">
             <span className="text-base sm:text-lg font-black text-[#10B981] tracking-tight">
               {formatNaira(product.price)}
@@ -115,41 +202,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </span>
           </div>
 
-          {/* Temu-style "Almost Sold Out" stock progress bar */}
-          <div className="mt-1.5 mb-2">
-            <div className="flex items-center justify-between text-[10px] text-gray-400 mb-0.5 font-medium">
-              <span className="flex items-center gap-1 text-[#fb6514] font-bold">
-                <Flame className="w-3 h-3 fill-[#fb6514]" /> High Demand
+          {/* Seller Reputation & Verified Badge */}
+          <div className="flex items-center justify-between text-[11px] py-1 border-t border-[#2A2A2A]/80 my-1">
+            <div className="flex items-center gap-1 text-amber-400 font-bold">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span>{reputation.averageRating} ★</span>
+              <span className="text-gray-400 font-normal text-[10px]">({reputation.totalRatings})</span>
+            </div>
+
+            {reputation.isVerifiedSeller && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-[#10B981] bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                <CheckCircle className="w-2.5 h-2.5" />
+                <span>Verified Seller</span>
               </span>
-              <span className="text-gray-500">Verified seller</span>
-            </div>
-            <div className="w-full bg-[#0A0A0A] rounded-full h-1.5 overflow-hidden border border-[#2A2A2A]">
-              <div className="bg-[#fb6514] h-1.5 rounded-full w-4/5" />
-            </div>
+            )}
           </div>
 
           {/* Location & Time */}
-          <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1.5 border-t border-[#2A2A2A]">
+          <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1 border-t border-[#2A2A2A]">
             <span className="flex items-center gap-1 truncate max-w-[130px]">
               <MapPin className="w-3 h-3 text-[#10B981] shrink-0" />
-              <span className="truncate">{product.location || 'Wukari, Taraba'}</span>
+              <span className="truncate">{product.location || 'FUWukari, Taraba'}</span>
             </span>
             <span className="text-[10px] text-gray-500 shrink-0">
               {formatTimeAgo(product.createdAt)}
             </span>
           </div>
-
-          {/* Seller Phone Display */}
-          {cleanPhone && (
-            <div className="mt-1.5 flex items-center justify-between text-[11px] bg-[#0A0A0A] px-2 py-1 rounded-lg border border-[#2A2A2A]">
-              <span className="font-semibold text-gray-300 truncate max-w-[100px]">
-                {product.sellerName || 'Seller'}
-              </span>
-              <span className="font-mono text-emerald-400 font-bold text-[11px]">
-                📞 {cleanPhone}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -176,22 +254,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             className="bg-[#0A0A0A] hover:bg-[#2A2A2A] text-white border border-[#2A2A2A] py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-colors"
           >
             <Phone className="w-3.5 h-3.5 text-[#10B981]" />
-            <span>Call Seller</span>
+            <span>Call</span>
           </a>
 
           {/* WhatsApp Button */}
           <a
             href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-              `Hello ${product.sellerName || 'Seller'}, I am contacting you from NaijaMarket Hub regarding "${product.title}" listed for ${formatNaira(
+              `Hello ${product.sellerName || 'Seller'}, I am contacting you from FUWUKARI NaijaMart regarding "${product.title}" listed for ${formatNaira(
                 product.price
-              )} in ${product.location || 'Nigeria'}. Is it still available?`
+              )} in ${product.location || 'FUWukari'}. Is it still available?`
             )}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
+            className="bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-xs transition-transform active:scale-95"
           >
-            <MessageSquare className="w-3.5 h-3.5" />
+            <MessageSquare className="w-3.5 h-3.5 fill-gray-950 text-gray-950" />
             <span>WhatsApp</span>
           </a>
         </div>

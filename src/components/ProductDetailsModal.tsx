@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   MapPin, 
@@ -10,21 +10,28 @@ import {
   Clock, 
   ChevronLeft, 
   ChevronRight, 
-  Bike,
-  FileCheck,
-  CheckCircle2,
-  Eye,
-  Flame,
-  Handshake,
-  Tag,
-  UserPlus,
-  Users
+  Bike, 
+  FileCheck, 
+  CheckCircle2, 
+  Eye, 
+  Flame, 
+  Handshake, 
+  Tag, 
+  UserPlus, 
+  Users,
+  Heart,
+  Star,
+  Flag
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
 import { SafeImage } from './SafeImage';
 import { useStudent } from '../context/StudentContext';
+import { isProductSaved, toggleSavedProduct } from '../services/favoritesService';
+import { getSellerReputation } from '../services/reputationService';
+import { ReportProductModal } from './ReportProductModal';
+import { RateSellerModal } from './RateSellerModal';
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -44,6 +51,15 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   const { showToast } = useToast();
   const { openPrivateChatWith, sendFriendRequest } = useStudent();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isSaved, setIsSaved] = useState<boolean>(() => (product ? isProductSaved(product.id) : false));
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
+
+  React.useEffect(() => {
+    if (product) {
+      setIsSaved(isProductSaved(product.id));
+    }
+  }, [product]);
 
   if (!product) return null;
 
@@ -95,15 +111,28 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={async () => {
+                const nextState = await toggleSavedProduct(product.id);
+                setIsSaved(nextState);
+                showToast(nextState ? 'Saved to your Wishlist ❤️' : 'Removed from Saved items', nextState ? 'success' : 'info');
+              }}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                isSaved ? 'text-red-500 bg-red-50 hover:bg-red-100' : 'text-gray-500 hover:text-red-500 hover:bg-gray-200'
+              }`}
+              title={isSaved ? "Saved to Wishlist" : "Save to Wishlist"}
+            >
+              <Heart className={`w-4 h-4 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} />
+            </button>
+            <button
               onClick={handleShare}
-              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
               title="Share listing"
             >
               <Share2 className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -130,7 +159,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                   <>
                     <button
                       onClick={() =>
-                        setActiveImageIndex((prev) => (prev === 0 ? imagesList.length - 1 : prev - 1))
+                        setActiveImageIndex((prev: number) => (prev === 0 ? imagesList.length - 1 : prev - 1))
                       }
                       className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/85 cursor-pointer z-10"
                     >
@@ -138,7 +167,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                     </button>
                     <button
                       onClick={() =>
-                        setActiveImageIndex((prev) => (prev === imagesList.length - 1 ? 0 : prev + 1))
+                        setActiveImageIndex((prev: number) => (prev === imagesList.length - 1 ? 0 : prev + 1))
                       }
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 text-white hover:bg-black/85 cursor-pointer z-10"
                     >
@@ -254,110 +283,157 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
               </div>
 
               {/* Seller Contact Card with BARGAIN CHAT & ACTION BUTTONS */}
-              <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-full bg-[#008751] text-white font-black flex items-center justify-center text-lg shadow-xs">
-                    {product.sellerName?.[0]?.toUpperCase() || 'S'}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="font-black text-gray-900 text-sm">
-                        {product.sellerName || 'Marketplace Seller'}
-                      </h4>
-                      <ShieldCheck className="w-4 h-4 text-[#008751]" />
+              {(() => {
+                const sellerReputation = getSellerReputation(
+                  (product as any).userId || (product as any).ownerUid,
+                  product.sellerName
+                );
+                return (
+                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-full bg-[#008751] text-white font-black flex items-center justify-center text-lg shadow-xs">
+                        {product.sellerName?.[0]?.toUpperCase() || 'S'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-black text-gray-900 text-sm">
+                            {product.sellerName || 'Marketplace Seller'}
+                          </h4>
+                          <ShieldCheck className="w-4 h-4 text-[#008751]" />
+                          {sellerReputation.isVerifiedSeller && (
+                            <span className="bg-emerald-100 text-[#008751] text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 border border-emerald-300">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Verified Seller</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Star Rating Badge */}
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <div className="flex items-center gap-0.5 text-amber-500">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span className="text-xs font-black text-gray-900">
+                              {sellerReputation.averageRating > 0 ? sellerReputation.averageRating.toFixed(1) : 'New'}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-gray-500 font-medium">
+                            ({sellerReputation.totalRatings} {sellerReputation.totalRatings === 1 ? 'rating' : 'ratings'})
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                          Location: {product.location || 'Wukari, Nigeria'}
+                        </p>
+                        <p className="text-xs font-mono font-bold text-gray-800 mt-0.5">
+                          Phone: {cleanPhone || 'Not provided'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-500 font-medium">
-                      Location: {product.location || 'Wukari, Nigeria'}
-                    </p>
-                    <p className="text-xs font-mono font-bold text-gray-800 mt-0.5">
-                      Phone: {cleanPhone || 'Not provided'}
-                    </p>
+
+                    {/* 3 ACTION BUTTONS: Bargain Chat, Call, WhatsApp */}
+                    <div className="flex flex-col gap-2 mt-2">
+                      {/* Bargain Chat Button (WhatsApp Style) */}
+                      {onOpenBargainChat && (
+                        <button
+                          onClick={() => onOpenBargainChat(product)}
+                          className="w-full bg-gradient-to-r from-emerald-600 via-[#008751] to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 border border-emerald-500 cursor-pointer"
+                        >
+                          <Handshake className="w-4 h-4 text-yellow-300" />
+                          <span>Bargain Chat (Offer Your Price) 💬</span>
+                        </button>
+                      )}
+
+                      {/* Student Network Actions: Private Chat & Add Friend */}
+                      <div className="grid grid-cols-2 gap-2 mt-0.5">
+                        <button
+                          onClick={() => {
+                            const sellerId = (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+                            openPrivateChatWith(
+                              {
+                                id: sellerId,
+                                fullName: product.sellerName || 'Verified Seller',
+                                campus: product.location || 'FU Wukari',
+                                phone: cleanPhone,
+                              },
+                              {
+                                id: product.id,
+                                title: product.title,
+                                price: product.price,
+                                imageUrl: product.imageUrl,
+                              }
+                            );
+                            onClose();
+                          }}
+                          className="bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-300 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Private Chat</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const sellerId = (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
+                            sendFriendRequest({
+                              id: sellerId,
+                              name: product.sellerName || 'Verified Seller',
+                              campus: product.location || 'FU Wukari',
+                              phone: cleanPhone,
+                            });
+                          }}
+                          className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-[#008751]" />
+                          <span>Add Friend</span>
+                        </button>
+                      </div>
+
+                      {/* Big Call Button */}
+                      {cleanPhone ? (
+                        <a
+                          href={`tel:${cleanPhone}`}
+                          className="w-full bg-gray-900 hover:bg-black text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
+                        >
+                          <Phone className="w-4 h-4 text-emerald-400" />
+                          <span>📞 Call Seller ({cleanPhone})</span>
+                        </a>
+                      ) : null}
+
+                      {/* Big WhatsApp Button */}
+                      <a
+                        href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
+                          `Hello ${product.sellerName || 'Seller'}, I am interested in your listing "${product.title}" (${formatNaira(
+                            product.price
+                          )}) on NaijaMarket Hub. Is it still available for inspection in ${product.location || 'your area'}?`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>💬 Chat on WhatsApp</span>
+                      </a>
+
+                      {/* Rate Seller and Report Listing actions */}
+                      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-emerald-200/70">
+                        <button
+                          onClick={() => setShowRateModal(true)}
+                          className="bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        >
+                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+                          <span>Rate Seller</span>
+                        </button>
+                        <button
+                          onClick={() => setShowReportModal(true)}
+                          className="bg-white hover:bg-red-50 text-red-700 border border-red-200 py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        >
+                          <Flag className="w-3.5 h-3.5 text-red-500" />
+                          <span>Report Ad</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* 3 ACTION BUTTONS: Bargain Chat, Call, WhatsApp */}
-                <div className="flex flex-col gap-2 mt-2">
-                  {/* Bargain Chat Button (WhatsApp Style) */}
-                  {onOpenBargainChat && (
-                    <button
-                      onClick={() => onOpenBargainChat(product)}
-                      className="w-full bg-gradient-to-r from-emerald-600 via-[#008751] to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 border border-emerald-500"
-                    >
-                      <Handshake className="w-4 h-4 text-yellow-300" />
-                      <span>Bargain Chat (Offer Your Price) 💬</span>
-                    </button>
-                  )}
-
-                  {/* Student Network Actions: Private Chat & Add Friend */}
-                  <div className="grid grid-cols-2 gap-2 mt-0.5">
-                    <button
-                      onClick={() => {
-                        const sellerId = (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
-                        openPrivateChatWith(
-                          {
-                            id: sellerId,
-                            fullName: product.sellerName || 'Verified Seller',
-                            campus: product.location || 'FU Wukari',
-                            phone: cleanPhone,
-                          },
-                          {
-                            id: product.id,
-                            title: product.title,
-                            price: product.price,
-                            imageUrl: product.imageUrl,
-                          }
-                        );
-                        onClose();
-                      }}
-                      className="bg-emerald-50 hover:bg-emerald-100 text-[#008751] border border-emerald-300 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-2xs"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Private Chat</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        const sellerId = (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''));
-                        sendFriendRequest({
-                          id: sellerId,
-                          name: product.sellerName || 'Verified Seller',
-                          campus: product.location || 'FU Wukari',
-                          phone: cleanPhone,
-                        });
-                      }}
-                      className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-2xs"
-                    >
-                      <UserPlus className="w-3.5 h-3.5 text-[#008751]" />
-                      <span>Add Friend</span>
-                    </button>
-                  </div>
-                  {/* Big Call Button */}
-                  {cleanPhone ? (
-                    <a
-                      href={`tel:${cleanPhone}`}
-                      className="w-full bg-gray-900 hover:bg-black text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
-                    >
-                      <Phone className="w-4 h-4 text-emerald-400" />
-                      <span>📞 Call Seller ({cleanPhone})</span>
-                    </a>
-                  ) : null}
-
-                  {/* Big WhatsApp Button */}
-                  <a
-                    href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-                      `Hello ${product.sellerName || 'Seller'}, I am interested in your listing "${product.title}" (${formatNaira(
-                        product.price
-                      )}) on NaijaMarket Hub. Is it still available for inspection in ${product.location || 'your area'}?`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-98"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>💬 Chat on WhatsApp</span>
-                  </a>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Safety Guidelines Card */}
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs">
@@ -409,6 +485,30 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Report Listing Modal */}
+      {showReportModal && (
+        <ReportProductModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          productId={product.id}
+          productTitle={product.title}
+          sellerId={(product as any).userId || (product as any).ownerUid || (product as any).sellerId}
+          sellerName={product.sellerName}
+        />
+      )}
+
+      {/* Rate Seller Modal */}
+      {showRateModal && (
+        <RateSellerModal
+          isOpen={showRateModal}
+          onClose={() => setShowRateModal(false)}
+          sellerId={(product as any).userId || (product as any).ownerUid || (product as any).sellerId || ('seller_' + (product.sellerName || 'user').toLowerCase().replace(/[^a-z0-9]/g, ''))}
+          sellerName={product.sellerName}
+          productId={product.id}
+          productTitle={product.title}
+        />
+      )}
     </div>
   );
 };

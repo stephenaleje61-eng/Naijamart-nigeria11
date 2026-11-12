@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, PlusCircle, Package, MapPin, MessageSquare } from 'lucide-react';
+import { ShoppingBag, PlusCircle, Package, Sparkles, Heart } from 'lucide-react';
 
 interface BottomNavProps {
   currentPage: string;
@@ -9,10 +9,10 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, setPage }) => {
   const navItems = [
     { id: 'market', label: 'Market', icon: ShoppingBag },
+    { id: 'wanted', label: 'Wanted', icon: Sparkles },
     { id: 'sell', label: 'Sell', icon: PlusCircle },
+    { id: 'saved', label: 'Saved ❤️', icon: Heart },
     { id: 'my-products', label: 'My Goods', icon: Package },
-    { id: 'hubs', label: 'Africa Chat', icon: MessageSquare },
-    { id: 'track', label: 'Track Phone', icon: MapPin },
   ];
 
   return (

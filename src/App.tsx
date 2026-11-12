@@ -13,10 +13,14 @@ import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { NaijaHubPortal } from './naijahub/NaijaHubPortal';
 import { HousesView } from './components/housing/HousesView';
 import { CgpaCalculatorPage } from './components/cgpa/CgpaCalculatorPage';
-import { LogIn, LogOut, User, Globe, Home, GraduationCap } from 'lucide-react';
+import { WantedBoardPage } from './components/WantedBoardPage';
+import { SavedProductsPage } from './components/SavedProductsPage';
+import { ProductDetailsModal } from './components/ProductDetailsModal';
+import { Product } from './types';
+import { LogIn, LogOut, User, Globe, Home, GraduationCap, Sparkles, Heart } from 'lucide-react';
 
 function AppContent() {
-  // Set initial page with URL recognition for /cgpa-calculator, /naijahub, etc.
+  // Set initial page with URL recognition for /cgpa-calculator, /wanted, /saved, /naijahub, etc.
   const [page, setPage] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       if (
@@ -25,6 +29,18 @@ function AppContent() {
         window.location.search.includes('cgpa')
       ) {
         return 'cgpa-calculator';
+      }
+      if (
+        window.location.pathname.includes('/wanted') || 
+        window.location.search.includes('wanted')
+      ) {
+        return 'wanted';
+      }
+      if (
+        window.location.pathname.includes('/saved') || 
+        window.location.search.includes('saved')
+      ) {
+        return 'saved';
       }
       if (
         window.location.pathname.includes('/naijahub') || 
@@ -36,6 +52,7 @@ function AppContent() {
     }
     return 'market';
   });
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { user, openAuthModal, signOutUser } = useAuth();
 
   // If user is inside NaijaHub Africa portal, render it as a full-page experience
@@ -80,6 +97,24 @@ function AppContent() {
               }`}
             >
               Market
+            </button>
+            <button
+              onClick={() => setPage("wanted")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                page === "wanted" ? "bg-[#008751] text-white shadow-sm" : "text-amber-300 hover:text-white hover:bg-[#2A2A2A]"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Wanted Board</span>
+            </button>
+            <button
+              onClick={() => setPage("saved")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                page === "saved" ? "bg-[#008751] text-white shadow-sm" : "text-red-400 hover:text-white hover:bg-[#2A2A2A]"
+              }`}
+            >
+              <Heart className="w-3.5 h-3.5 fill-red-400 text-red-400" />
+              <span>Saved</span>
             </button>
             <button
               onClick={() => setPage("sell")}
@@ -151,7 +186,32 @@ function AppContent() {
           </div>
 
           {/* User Sign In / Profile */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Mobile quick buttons: Wanted & Saved */}
+            <button
+              onClick={() => setPage("wanted")}
+              className={`md:hidden px-2 py-1.5 rounded-xl text-[11px] font-black border flex items-center gap-1 cursor-pointer transition-all ${
+                page === "wanted"
+                  ? "bg-[#008751] text-white border-[#008751]"
+                  : "bg-[#151515] text-amber-300 hover:text-white border-[#2A2A2A]"
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>Wanted</span>
+            </button>
+
+            <button
+              onClick={() => setPage("saved")}
+              className={`md:hidden px-2 py-1.5 rounded-xl text-[11px] font-black border flex items-center gap-1 cursor-pointer transition-all ${
+                page === "saved"
+                  ? "bg-red-600 text-white border-red-500"
+                  : "bg-[#151515] text-red-400 hover:text-white border-[#2A2A2A]"
+              }`}
+            >
+              <Heart className="w-3 h-3 fill-red-400 text-red-400" />
+              <span>Saved</span>
+            </button>
+
             {/* Mobile switch to CGPA */}
             <button
               onClick={() => {
@@ -160,7 +220,7 @@ function AppContent() {
                   window.history.pushState({}, '', '/cgpa-calculator');
                 }
               }}
-              className="md:hidden px-2.5 py-1.5 rounded-xl text-[11px] font-black bg-[#151515] text-amber-300 border border-[#2A2A2A] flex items-center gap-1 cursor-pointer"
+              className="md:hidden px-2 py-1.5 rounded-xl text-[11px] font-black bg-[#151515] text-amber-300 border border-[#2A2A2A] flex items-center gap-1 cursor-pointer"
             >
               <span>🎓</span>
               <span>CGPA</span>
@@ -169,7 +229,7 @@ function AppContent() {
             {/* Mobile switch to NaijaHub */}
             <button
               onClick={() => setPage("naijahub")}
-              className="md:hidden px-2.5 py-1.5 rounded-xl text-[11px] font-black bg-[#151515] text-emerald-400 border border-[#2A2A2A] flex items-center gap-1 cursor-pointer"
+              className="md:hidden px-2 py-1.5 rounded-xl text-[11px] font-black bg-[#151515] text-emerald-400 border border-[#2A2A2A] flex items-center gap-1 cursor-pointer"
             >
               <Globe className="w-3.5 h-3.5 text-amber-400" />
               <span>NaijaHub</span>
@@ -195,7 +255,7 @@ function AppContent() {
             ) : (
               <button
                 onClick={() => openAuthModal()}
-                className="flex items-center gap-1 bg-[#008751] hover:bg-[#007043] text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-sm transition-all cursor-pointer border border-emerald-600/30"
+                className="flex items-center gap-1 bg-[#008751] hover:bg-[#007043] text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-sm transition-all cursor-pointer border border-emerald-600/30"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -208,6 +268,13 @@ function AppContent() {
       {/* Main Pages Conditional Rendering */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {page === "market" && <MarketPage onNavigate={(p: any) => setPage(p)} />}
+        {page === "wanted" && <WantedBoardPage onNavigate={(p: any) => setPage(p)} />}
+        {page === "saved" && (
+          <SavedProductsPage 
+            onNavigate={(p: any) => setPage(p)} 
+            onSelectProduct={(prod: any) => setSelectedProduct(prod)} 
+          />
+        )}
         {page === "sell" && <SellPage onNavigate={(p) => setPage(p)} onOpenAuth={openAuthModal} />}
         {page === "my-products" && <MyProductsPage onNavigate={(p) => setPage(p)} onOpenAuth={openAuthModal} />}
         {page === "track" && <TrackPage onNavigate={(p) => setPage(p)} />}
@@ -221,6 +288,16 @@ function AppContent() {
           <CgpaCalculatorPage onNavigateHome={() => setPage("market")} />
         )}
       </main>
+
+      {/* Product Details Modal if opened from Saved page */}
+      {selectedProduct && (
+        <ProductDetailsModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onSelectRelatedProduct={(rel) => setSelectedProduct(rel)}
+          allProducts={[]}
+        />
+      )}
 
       {/* Bottom Nav with useState setPage */}
       <BottomNav currentPage={page} setPage={setPage} />

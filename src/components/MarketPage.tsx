@@ -1,27 +1,88 @@
 import { useEffect, useState } from "react";
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
-import { Search, PlusCircle, Phone, MessageSquare, ShoppingBag, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { 
+  Search, 
+  PlusCircle, 
+  Phone, 
+  MessageSquare, 
+  ShoppingBag, 
+  ArrowRight, 
+  Loader2, 
+  CheckCircle2, 
+  Heart, 
+  MoreVertical, 
+  Star, 
+  ShieldCheck, 
+  Flag, 
+  MapPin, 
+  Tag, 
+  RotateCcw,
+  Sparkles,
+  SlidersHorizontal,
+  X
+} from "lucide-react";
 import { SafeImage } from "./SafeImage";
 import { sanitizeStoredProductImages, getCategoryFallback } from "../utils/imageUtils";
+import { isProductSaved, toggleSavedProduct } from "../services/favoritesService";
+import { getSellerReputation } from "../services/reputationService";
+import { ReportProductModal } from "./ReportProductModal";
+import { RateSellerModal } from "./RateSellerModal";
+import { ProductDetailsModal } from "./ProductDetailsModal";
+import { useToast } from "../context/ToastContext";
+import { formatNaira } from "../utils/formatters";
+
+export const FUW_LOCATIONS = [
+  'All',
+  'Rafin Kada',
+  'Behind School',
+  'Wukari Town'
+] as const;
+
+export const PRICE_RANGES = [
+  { id: 'all', label: 'All Prices' },
+  { id: 'under_5k', label: 'Under ₦5k' },
+  { id: '5k_20k', label: '₦5k - ₦20k' },
+  { id: '20k_50k', label: '₦20k - ₦50k' },
+  { id: 'above_50k', label: 'Above ₦50k' },
+] as const;
 
 export default function MarketPage({ onNavigate }: any) {
+  const { showToast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [priceFilter, setPriceFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("All");
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  // Modals state
+  const [reportingProduct, setReportingProduct] = useState<any | null>(null);
+  const [ratingProduct, setRatingProduct] = useState<any | null>(null);
+  const [selectedProductDetails, setSelectedProductDetails] = useState<any | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+
+  // Update saved state across changes
+  useEffect(() => {
+    const handleSavedChange = () => {
+      // triggers re-render
+      setSavedIds([...(JSON.parse(localStorage.getItem('naijamart_saved_products') || '[]'))]);
+    };
+    handleSavedChange();
+    window.addEventListener('savedProductsChanged', handleSavedChange);
+    return () => window.removeEventListener('savedProductsChanged', handleSavedChange);
+  }, []);
 
   // Timer to guarantee "Checking database..." shows during first 3 seconds instead of flash empty
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 3000);
+    }, 2500);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    console.log("MarketPage Loaded - initializing dual fallback query for collection 'products'");
-
     const loadLocalProducts = () => {
       try {
         const myItems = JSON.parse(localStorage.getItem("my_products") || "[]");
@@ -55,7 +116,7 @@ export default function MarketPage({ onNavigate }: any) {
           category: "Phones & Tablets",
           condition: "New",
           state: "FUWukari",
-          location: "FUWukari Campus, Taraba",
+          location: "Rafin Kada, FUWukari",
           description: "Official NaijaMart Live Item. Verified seller and active campus listing.",
           phone: "+2348167258121",
           ownerPhone: "+2348167258121",
@@ -102,52 +163,47 @@ export default function MarketPage({ onNavigate }: any) {
         if (isAStephen && !isBStephen) return -1;
         if (!isAStephen && isBStephen) return 1;
 
-        const timeA = a.createdAt?.seconds 
-          ? a.createdAt.seconds * 1000 
-          : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
-        const timeB = b.createdAt?.seconds 
-          ? b.createdAt.seconds * 1000 
-          : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-        return timeB - timeA;
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
       });
 
       setProducts(unique);
       setIsInitialLoading(false);
     };
 
-    // Immediate initial sync from localStorage
-    processAndSet([]);
+    let unsubSecondary: any = null;
 
-    let unsubSecondary: (() => void) | null = null;
-
-    // 1. Try first: get all products ordered by createdAt desc (NO WHERE status filter)
-    const qOrdered = query(collection(db, "products"), orderBy("createdAt", "desc"));
+    const primaryQuery = query(collection(db, "products"), orderBy("createdAt", "desc"));
     const unsubPrimary = onSnapshot(
-      qOrdered,
-      (snap) => {
-        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        processAndSet(items);
+      primaryQuery,
+      (snapshot) => {
+        const firestoreList: any[] = [];
+        snapshot.forEach((doc) => {
+          firestoreList.push({ id: doc.id, ...doc.data() });
+        });
+        processAndSet(firestoreList);
       },
-      (err) => {
-        console.warn("Ordered query notice (fallback to plain collection 'products'):", err);
-        // 2. Catch: get all products without orderBy (in case index is missing or building)
-        const qPlain = collection(db, "products");
+      (primaryErr) => {
+        console.warn("Primary query with orderBy failed, attempting secondary without orderBy:", primaryErr);
+        const secondaryQuery = collection(db, "products");
         unsubSecondary = onSnapshot(
-          qPlain,
-          (snap) => {
-            const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            processAndSet(items);
+          secondaryQuery,
+          (snapshot) => {
+            const firestoreList: any[] = [];
+            snapshot.forEach((doc) => {
+              firestoreList.push({ id: doc.id, ...doc.data() });
+            });
+            processAndSet(firestoreList);
           },
-          (err2) => {
-            console.warn("Plain query notice (fallback to localStorage products):", err2);
-            // 3. Catch both: show products from localStorage if any
+          (secErr) => {
+            console.warn("Secondary query also failed, using purely local products:", secErr);
             processAndSet([]);
           }
         );
       }
     );
 
-    // Instant cross-component event listener for zero-delay posting
     const handleLocalProductEvent = (e: any) => {
       if (e?.detail) {
         setProducts(prev => {
@@ -168,110 +224,231 @@ export default function MarketPage({ onNavigate }: any) {
 
   const categories = ["All", "Phones & Tablets", "Fashion", "Electronics", "Hostels", "Okada"];
 
+  // Filter products by Search, Category, Price Range, and Campus Location simultaneously
   const filtered = products.filter(p => {
-    const titleMatch = !search || p.title?.toLowerCase().includes(search.toLowerCase());
-    const catMatch = selectedCategory === "All" || !p.category || p.category.toLowerCase().includes(selectedCategory.toLowerCase()) || p.title?.toLowerCase().includes(selectedCategory.toLowerCase());
-    return titleMatch && catMatch;
+    // 1. Search Query
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const titleMatch = p.title?.toLowerCase().includes(q);
+      const descMatch = p.description?.toLowerCase().includes(q);
+      const locMatch = p.location?.toLowerCase().includes(q);
+      const sellerMatch = p.sellerName?.toLowerCase().includes(q);
+      if (!titleMatch && !descMatch && !locMatch && !sellerMatch) return false;
+    }
+
+    // 2. Category
+    if (selectedCategory !== "All") {
+      const catMatch = !p.category || p.category.toLowerCase().includes(selectedCategory.toLowerCase()) || p.title?.toLowerCase().includes(selectedCategory.toLowerCase());
+      if (!catMatch) return false;
+    }
+
+    // 3. Price Filter
+    const price = Number(p.price || 0);
+    if (priceFilter === 'under_5k' && price >= 5000) return false;
+    if (priceFilter === '5k_20k' && (price < 5000 || price > 20000)) return false;
+    if (priceFilter === '20k_50k' && (price < 20000 || price > 50000)) return false;
+    if (priceFilter === 'above_50k' && price <= 50000) return false;
+
+    // 4. Location Filter (Rafin Kada, Behind School, Wukari Town)
+    if (locationFilter !== "All") {
+      const itemLoc = (p.location || p.state || '').toLowerCase();
+      const targetLoc = locationFilter.toLowerCase();
+      if (!itemLoc.includes(targetLoc)) return false;
+    }
+
+    return true;
   });
 
+  const hasActiveFilters = selectedCategory !== 'All' || priceFilter !== 'all' || locationFilter !== 'All' || search.trim() !== '';
+
+  const clearAllFilters = () => {
+    setSelectedCategory('All');
+    setPriceFilter('all');
+    setLocationFilter('All');
+    setSearch('');
+  };
+
+  const handleToggleSave = async (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    const isSaved = await toggleSavedProduct(productId);
+    showToast(isSaved ? 'Saved to your Wishlist ❤️' : 'Removed from Saved items', isSaved ? 'success' : 'info');
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-6 pb-16">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-[#075B43] via-[#0B8751] to-[#151515] text-white rounded-3xl p-6 sm:p-8 shadow-md border border-[#2A2A2A]">
-        <span className="inline-block px-3 py-1 bg-black/40 border border-white/10 text-emerald-300 rounded-full text-xs font-black mb-2 uppercase tracking-wide">
-          Verified Campus Marketplace
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight">NAIJAMART MARKET</h1>
-        <p className="text-emerald-100/80 text-sm mt-1">Buy and Sell in FUWukari & Nationwide</p>
-      </div>
+      <div className="bg-gradient-to-r from-[#075B43] via-[#0B8751] to-[#151515] text-white rounded-3xl p-5 sm:p-8 shadow-md border border-[#2A2A2A]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="inline-block px-3 py-1 bg-black/40 border border-white/10 text-emerald-300 rounded-full text-xs font-black mb-2 uppercase tracking-wide">
+              FUWUKARI Students Marketplace
+            </span>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight">NAIJAMART MARKET</h1>
+            <p className="text-emerald-100/90 text-xs sm:text-sm mt-1">
+              Buy and Sell Phones, Hostels, Okada & Gadgets across Rafin Kada, Behind School & Wukari Town
+            </p>
+          </div>
 
-      {/* Debug & Status Bar: "Found X products" badge */}
-      <div className="flex items-center justify-between gap-3 px-1">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#151515] border border-[#2A2A2A] text-[#10B981] rounded-full text-xs font-black shadow-xs">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]"></span>
-          </span>
-          <span>Found {products.length} products</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onNavigate?.("saved")}
+              className="px-4 py-2.5 bg-[#151515] hover:bg-[#2A2A2A] text-red-400 font-bold text-xs rounded-2xl border border-[#2A2A2A] flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+              <span>Saved ❤️</span>
+            </button>
+            <button 
+              onClick={() => onNavigate("sell")} 
+              className="px-4 py-2.5 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-xs rounded-2xl shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 border border-white/20"
+            >
+              <PlusCircle className="w-4 h-4 text-gray-950" />
+              <span>+ Post Product</span>
+            </button>
+          </div>
         </div>
-
-        <button 
-          onClick={() => onNavigate("sell")} 
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#0B8751] hover:bg-[#096e42] text-white rounded-full text-xs font-black shadow-sm transition-all active:scale-95 cursor-pointer border border-emerald-600/40"
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          <span>+ Sell Product</span>
-        </button>
       </div>
 
-      {/* Free CGPA Calculator Viral Banner */}
+      {/* Wanted Board Banner Direct Hook */}
       <div 
-        onClick={() => {
-          if (onNavigate) onNavigate("cgpa-calculator");
-          if (typeof window !== 'undefined' && window.history.pushState) {
-            window.history.pushState({}, '', '/cgpa-calculator');
-          }
-        }}
-        className="bg-gradient-to-r from-amber-500/90 via-yellow-400/90 to-amber-500/90 rounded-3xl p-4 sm:p-5 text-gray-950 shadow-md flex items-center justify-between gap-4 cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all border border-amber-300/30"
+        onClick={() => onNavigate?.("wanted")}
+        className="bg-gradient-to-r from-emerald-950/80 via-[#151515] to-[#151515] border border-emerald-500/40 rounded-3xl p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer hover:border-[#10B981] transition-all shadow-xs group"
       >
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center text-2xl shrink-0 shadow-xs">
-            🎓
+          <div className="w-11 h-11 rounded-2xl bg-[#0B8751] text-white flex items-center justify-center text-xl shrink-0 font-black shadow-xs">
+            🎯
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="bg-black text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Viral Student Tool
+              <span className="bg-[#0B8751] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                New Feature
               </span>
-              <span className="text-[11px] font-black text-amber-950 hidden sm:inline">
-                5.0 & 4.0 Scale
+              <span className="text-xs font-bold text-gray-300">
+                Can't find what you're looking for?
               </span>
             </div>
-            <h3 className="text-base sm:text-lg font-black tracking-tight text-gray-950 mt-0.5">
-              Free CGPA Calculator - Calculate in 30 Seconds 🎓
+            <h3 className="text-sm sm:text-base font-black text-white group-hover:text-[#10B981] transition-colors mt-0.5">
+              FUWUKARI Wanted Board — Post What You Need & Get Sellers on WhatsApp
             </h3>
-            <p className="text-xs text-gray-800 font-semibold line-clamp-1">
-              FUWukari, UNILAG, FUTO, UNILORIN, ABU, and all Nigerian universities. No login required.
-            </p>
           </div>
         </div>
 
         <button
           type="button"
-          className="hidden sm:flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gray-950 text-white text-xs font-black shrink-0 shadow-md transition-all hover:bg-gray-800"
+          className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#25D366] text-gray-950 text-xs font-black shrink-0 shadow-sm"
         >
-          <span>Calculate Now</span>
+          <span>Open Wanted Board</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Search Bar & Categories */}
-      <div className="bg-[#151515] rounded-3xl border border-[#2A2A2A] p-4 sm:p-5 shadow-xs space-y-3">
+      <div className="bg-[#151515] rounded-3xl border border-[#2A2A2A] p-4 sm:p-5 shadow-xs space-y-4">
+        {/* Search Input */}
         <div className="relative">
           <Search className="w-5 h-5 text-gray-500 absolute left-4 top-3.5" />
           <input 
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search phones, clothes, okada, hostels..."
-            className="w-full pl-11 pr-4 py-3 bg-[#0A0A0A] border border-[#2A2A2A] rounded-2xl text-sm font-medium text-white placeholder-gray-500 focus:outline-none focus:border-[#0B8751] focus:ring-1 focus:ring-[#0B8751] transition-all"
+            placeholder="Search phones, clothes, okada, hostels in FUWukari..."
+            className="w-full pl-11 pr-4 py-3 bg-[#0A0A0A] border border-[#2A2A2A] rounded-2xl text-sm font-medium text-white placeholder-gray-500 focus:outline-hidden focus:border-[#0B8751] focus:ring-1 focus:ring-[#0B8751] transition-all"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3.5 top-3.5 text-gray-400 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                selectedCategory === cat
-                  ? "bg-[#0B8751] text-white shadow-xs"
-                  : "bg-[#0A0A0A] border border-[#2A2A2A] text-gray-300 hover:bg-[#2A2A2A] hover:text-white"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* 1. PRICE FILTER BAR (Required: All, Under ₦5k, ₦5k - ₦20k, ₦20k - ₦50k, Above ₦50k) */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-[#10B981]" />
+              <span>Price Filter:</span>
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-[11px] text-[#10B981] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset Filters</span>
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {PRICE_RANGES.map((range) => (
+              <button
+                key={range.id}
+                onClick={() => setPriceFilter(range.id)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  priceFilter === range.id
+                    ? "bg-[#0B8751] text-white shadow-xs font-black"
+                    : "bg-[#0A0A0A] border border-[#2A2A2A] text-gray-300 hover:bg-[#2A2A2A] hover:text-white"
+                }`}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* 2. LOCATION FILTER BAR (Required: All, Rafin Kada, Behind School, Wukari Town) */}
+        <div>
+          <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-[#10B981]" />
+            <span>Campus Location Filter:</span>
+          </span>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {FUW_LOCATIONS.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocationFilter(loc)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  locationFilter === loc
+                    ? "bg-[#075E54] text-white shadow-xs font-black border border-emerald-400/30"
+                    : "bg-[#0A0A0A] border border-[#2A2A2A] text-gray-300 hover:bg-[#2A2A2A] hover:text-white"
+                }`}
+              >
+                {loc === 'All' ? 'All Locations' : loc}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Categories Bar */}
+        <div>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                  selectedCategory === cat
+                    ? "bg-white text-gray-950 font-black shadow-xs"
+                    : "bg-[#0A0A0A] border border-[#2A2A2A] text-gray-400 hover:bg-[#2A2A2A] hover:text-white"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Results Count & Active Filter Indicator */}
+      <div className="flex items-center justify-between gap-3 px-1 text-xs text-gray-400">
+        <span className="font-bold text-gray-300">
+          Showing <span className="text-[#10B981] font-black">{filtered.length}</span> goods in FUWukari
+        </span>
+        {hasActiveFilters && (
+          <span className="text-[11px] text-emerald-400 font-semibold bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-800/40">
+            Active Filters Applied
+          </span>
+        )}
       </div>
 
       {/* Products Grid */}
@@ -289,15 +466,31 @@ export default function MarketPage({ onNavigate }: any) {
             <div className="w-16 h-16 bg-[#0A0A0A] border border-[#2A2A2A] text-[#10B981] rounded-2xl flex items-center justify-center mx-auto mb-3">
               <ShoppingBag className="w-8 h-8" />
             </div>
-            <h3 className="font-black text-white text-base mb-1">No products yet - Be first to post</h3>
-            <p className="text-xs text-gray-400 max-w-sm mx-auto mb-4">Post your phone, gadget, fashion, or bedspace and reach verified buyers.</p>
-            <button 
-              onClick={() => onNavigate("sell")} 
-              className="px-6 py-3 bg-[#0B8751] hover:bg-[#096e42] text-white rounded-2xl text-xs font-black shadow-sm transition-all active:scale-98 cursor-pointer inline-flex items-center gap-2 border border-emerald-600/40"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Post Product</span>
-            </button>
+            <h3 className="font-black text-white text-base mb-1">
+              {hasActiveFilters ? "No products match your filters" : "No products yet - Be first to post"}
+            </h3>
+            <p className="text-xs text-gray-400 max-w-sm mx-auto mb-4">
+              {hasActiveFilters 
+                ? "Try clearing your price or location filters to see more student goods."
+                : "Post your phone, gadget, fashion, or bedspace and reach verified buyers."}
+            </p>
+            {hasActiveFilters ? (
+              <button
+                onClick={clearAllFilters}
+                className="px-6 py-3 bg-[#0B8751] hover:bg-[#096e42] text-white rounded-2xl text-xs font-black shadow-sm transition-all active:scale-98 cursor-pointer inline-flex items-center gap-2 border border-emerald-600/40"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset Filters</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => onNavigate("sell")} 
+                className="px-6 py-3 bg-[#0B8751] hover:bg-[#096e42] text-white rounded-2xl text-xs font-black shadow-sm transition-all active:scale-98 cursor-pointer inline-flex items-center gap-2 border border-emerald-600/40"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Post Product</span>
+              </button>
+            )}
           </div>
         ) : (
           filtered.map((p: any) => {
@@ -315,67 +508,167 @@ export default function MarketPage({ onNavigate }: any) {
               p.sellerName === "stephenaleje61" || 
               p.ownerUid === "stephenaleje61";
 
+            const reputation = getSellerReputation(p.userId || p.ownerUid, p.sellerName);
+            const isSaved = isProductSaved(p.id);
+
             return (
-              <div key={p.id} className="bg-[#151515] rounded-2xl border border-[#2A2A2A] hover:border-gray-600 overflow-hidden shadow-2xs hover:shadow-lg transition-all flex flex-col justify-between p-3">
+              <div 
+                key={p.id} 
+                onClick={() => setSelectedProductDetails(p)}
+                className="bg-[#151515] rounded-2xl border border-[#2A2A2A] hover:border-[#10B981] overflow-hidden shadow-2xs hover:shadow-lg transition-all flex flex-col justify-between p-3 relative cursor-pointer group text-[#EDEDED]"
+              >
                 <div>
+                  {/* Photo Container with Heart ❤️ and 3-Dot (...) Menu */}
                   <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-[#0A0A0A] border border-[#2A2A2A]/50 mb-2.5">
                     <SafeImage 
                       src={p.images?.[0] || p.imageUrl || p.coverImage} 
                       alt={p.title} 
                       fallbackCategory={p.category}
                       aspectRatio="aspect-square"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+
+                    {/* Heart ❤️ Button (Turns Red When Clicked) */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleSave(e, p.id)}
+                      title={isSaved ? 'Remove from Saved' : 'Save to Wishlist'}
+                      className="absolute top-2 right-2 z-20 p-2 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-xs transition-all cursor-pointer border border-white/10 active:scale-90"
+                    >
+                      <Heart
+                        className={`w-3.5 h-3.5 transition-colors ${
+                          isSaved ? 'fill-red-500 text-red-500 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.7)]' : 'text-white/80 hover:text-red-400'
+                        }`}
+                      />
+                    </button>
+
+                    {/* 3-Dot (...) Menu Button */}
+                    <div className="absolute top-2 right-10 z-20">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === p.id ? null : p.id);
+                        }}
+                        title="Options"
+                        className="p-1.5 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-xs text-white/80 hover:text-white transition-all cursor-pointer border border-white/10"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Dropdown for Report / Rate */}
+                      {activeMenuId === p.id && (
+                        <div 
+                          className="absolute right-0 top-8 w-40 bg-[#1E1E1E] border border-[#333] rounded-2xl shadow-2xl py-1 z-30 animate-fade-in"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setRatingProduct(p);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-bold text-amber-300 hover:bg-[#2A2A2A] flex items-center gap-2 cursor-pointer transition-colors"
+                          >
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            <span>Rate Seller</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setReportingProduct(p);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-bold text-red-400 hover:bg-[#2A2A2A] flex items-center gap-2 cursor-pointer transition-colors border-t border-[#2A2A2A]"
+                          >
+                            <Flag className="w-3.5 h-3.5 text-red-400" />
+                            <span>Report This Post</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Badges */}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                       <span className="bg-black/80 border border-white/10 backdrop-blur-xs text-gray-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
                         {p.condition || "Used"}
                       </span>
                       {isStephen && (
                         <span className="bg-[#0B8751] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs border border-emerald-400/20">
                           <CheckCircle2 className="w-2.5 h-2.5" />
-                          <span>Admin / Featured</span>
+                          <span>Admin / Verified</span>
                         </span>
                       )}
                     </div>
                   </div>
+
+                  {/* Product Title */}
                   <h3 className="font-bold text-gray-100 text-xs sm:text-sm line-clamp-2 leading-snug mb-1">
                     {p.title}
                   </h3>
+
+                  {/* Price */}
                   <p className="text-[#10B981] font-black text-base sm:text-lg">
-                    ₦{Number(p.price || 0).toLocaleString()}
+                    {formatNaira(p.price)}
                   </p>
-                  <p className="text-[11px] text-gray-400 truncate mt-0.5">
-                    📍 {p.state || p.location || "FUWukari Campus"}
+
+                  {/* Seller Rating & Reputation Display (Required) */}
+                  <div className="flex items-center justify-between text-[11px] py-1 border-t border-[#2A2A2A]/80 my-1">
+                    <div className="flex items-center gap-1 text-amber-400 font-bold">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                      <span>{reputation.averageRating} ★</span>
+                      <span className="text-gray-400 font-normal text-[10px]">({reputation.totalRatings})</span>
+                    </div>
+
+                    {reputation.isVerifiedSeller && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-black text-[#10B981] bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        <span>Verified Seller</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Location & Area Display */}
+                  <p className="text-[11px] text-gray-400 truncate mt-0.5 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-[#10B981] shrink-0" />
+                    <span className="truncate">{p.state || p.location || "FUWukari Campus"}</span>
                   </p>
                 </div>
 
-                <div className="pt-3 mt-2 border-t border-[#2A2A2A] grid grid-cols-2 gap-2">
+                {/* Contact Buttons */}
+                <div className="pt-2.5 mt-2 border-t border-[#2A2A2A] grid grid-cols-2 gap-2">
                   {rawPhone ? (
                     <>
                       <a 
                         href={`tel:${rawPhone}`}
+                        onClick={(e) => e.stopPropagation()}
                         className="py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
                       >
                         <Phone className="w-3 h-3 text-gray-300" />
                         <span>Call</span>
                       </a>
                       <a 
-                        href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello, I'm interested in your item "${p.title}" on NaijaMart Hub.`)}`} 
+                        href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello, I saw your product "${p.title}" on FUWUKARI NaijaMart. Is it still available?`)}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="py-2 bg-[#0B8751] hover:bg-[#096e42] text-white text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors shadow-2xs"
+                        onClick={(e) => e.stopPropagation()}
+                        className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-[11px] rounded-xl text-center flex items-center justify-center gap-1 transition-colors shadow-2xs"
                       >
-                        <MessageSquare className="w-3 h-3" />
+                        <MessageSquare className="w-3 h-3 fill-gray-950 text-gray-950" />
                         <span>WhatsApp</span>
                       </a>
                     </>
                   ) : (
                     <button 
-                      onClick={() => onNavigate?.("hubs")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProductDetails(p);
+                      }}
                       className="col-span-2 py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-300 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
                     >
                       <MessageSquare className="w-3 h-3 text-[#10B981]" />
-                      <span>Contact on Community Hub</span>
+                      <span>View Details</span>
                     </button>
                   )}
                 </div>
@@ -384,6 +677,41 @@ export default function MarketPage({ onNavigate }: any) {
           })
         )}
       </div>
+
+      {/* Modals */}
+      {reportingProduct && (
+        <ReportProductModal
+          isOpen={true}
+          onClose={() => setReportingProduct(null)}
+          productId={reportingProduct.id}
+          productTitle={reportingProduct.title}
+          sellerId={reportingProduct.userId || reportingProduct.ownerUid}
+          sellerName={reportingProduct.sellerName}
+        />
+      )}
+
+      {ratingProduct && (
+        <RateSellerModal
+          isOpen={true}
+          onClose={() => setRatingProduct(null)}
+          sellerId={ratingProduct.userId || ratingProduct.ownerUid || 'seller'}
+          sellerName={ratingProduct.sellerName || 'Seller'}
+          productId={ratingProduct.id}
+          productTitle={ratingProduct.title}
+          onRatingSubmitted={() => {
+            // refresh
+          }}
+        />
+      )}
+
+      {selectedProductDetails && (
+        <ProductDetailsModal
+          product={selectedProductDetails}
+          onClose={() => setSelectedProductDetails(null)}
+          onSelectRelatedProduct={(rel) => setSelectedProductDetails(rel)}
+          allProducts={products}
+        />
+      )}
     </div>
   );
 }
