@@ -20,9 +20,11 @@ import {
   RotateCcw,
   Sparkles,
   SlidersHorizontal,
-  X
+  X,
+  ShieldAlert
 } from "lucide-react";
 import { SafeImage } from "./SafeImage";
+import { WelcomeAnnouncementMarquee } from "./WelcomeAnnouncement";
 import { sanitizeStoredProductImages, getCategoryFallback } from "../utils/imageUtils";
 import { isProductSaved, toggleSavedProduct } from "../services/favoritesService";
 import { getSellerReputation } from "../services/reputationService";
@@ -30,6 +32,7 @@ import { ReportProductModal } from "./ReportProductModal";
 import { RateSellerModal } from "./RateSellerModal";
 import { ProductDetailsModal } from "./ProductDetailsModal";
 import { useToast } from "../context/ToastContext";
+import { useMessaging } from "../context/MessagingContext";
 import { formatNaira } from "../utils/formatters";
 
 export const FUW_LOCATIONS = [
@@ -49,6 +52,7 @@ export const PRICE_RANGES = [
 
 export default function MarketPage({ onNavigate }: any) {
   const { showToast } = useToast();
+  const { openChatWithSeller } = useMessaging();
   const [products, setProducts] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -111,13 +115,13 @@ export default function MarketPage({ onNavigate }: any) {
       if (unique.length === 0) {
         const seedProduct = {
           id: "prod_live_seed_001",
-          title: "Test Product - NaijaMart Live",
+          title: "Test Product - FU MARKET Live",
           price: 5000,
           category: "Phones & Tablets",
           condition: "New",
           state: "FUWukari",
           location: "Rafin Kada, FUWukari",
-          description: "Official NaijaMart Live Item. Verified seller and active campus listing.",
+          description: "Official FU MARKET Live Item. Verified seller and active campus listing.",
           phone: "+2348167258121",
           ownerPhone: "+2348167258121",
           phoneNumber: "+2348167258121",
@@ -275,17 +279,22 @@ export default function MarketPage({ onNavigate }: any) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-6 pb-16">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-[#075B43] via-[#0B8751] to-[#151515] text-white rounded-3xl p-5 sm:p-8 shadow-md border border-[#2A2A2A]">
+    <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-5 sm:space-y-6 pb-16">
+      {/* Continuous Scrolling Announcement Banner */}
+      <WelcomeAnnouncementMarquee />
+
+      {/* Top Welcome & Buyer Safety Banner */}
+      <div className="bg-gradient-to-r from-[#075B43] via-[#0B8751] to-[#151515] text-white rounded-3xl p-5 sm:p-8 shadow-md border border-[#2A2A2A] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span className="inline-block px-3 py-1 bg-black/40 border border-white/10 text-emerald-300 rounded-full text-xs font-black mb-2 uppercase tracking-wide">
-              FUWUKARI Students Marketplace
+              Buy. Sell. Connect.
             </span>
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tight">NAIJAMART MARKET</h1>
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight uppercase">
+              WELCOME TO FU MARKET
+            </h1>
             <p className="text-emerald-100/90 text-xs sm:text-sm mt-1">
-              Buy and Sell Phones, Hostels, Okada & Gadgets across Rafin Kada, Behind School & Wukari Town
+              Buy. Sell. Connect. Phones, Hostels, Okada & Gadgets across Rafin Kada, Behind School & Wukari Town
             </p>
           </div>
 
@@ -304,6 +313,21 @@ export default function MarketPage({ onNavigate }: any) {
               <PlusCircle className="w-4 h-4 text-gray-950" />
               <span>+ Post Product</span>
             </button>
+          </div>
+        </div>
+
+        {/* Important Buyer Safety Notice */}
+        <div className="bg-black/45 border border-amber-400/50 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+            <ShieldAlert className="w-5 h-5" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs sm:text-sm font-black text-amber-300 tracking-wide uppercase leading-snug">
+              MAKE SURE YOU SEE YOUR GOODS BEFORE MAKING PAYMENT.
+            </p>
+            <p className="text-[11px] sm:text-xs text-gray-200 leading-relaxed">
+              Always inspect your goods and confirm that the product meets your expectations before completing payment. Be careful when dealing with unknown sellers.
+            </p>
           </div>
         </div>
       </div>
@@ -636,41 +660,54 @@ export default function MarketPage({ onNavigate }: any) {
                   </p>
                 </div>
 
-                {/* Contact Buttons */}
-                <div className="pt-2.5 mt-2 border-t border-[#2A2A2A] grid grid-cols-2 gap-2">
-                  {rawPhone ? (
-                    <>
-                      <a 
-                        href={`tel:${rawPhone}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
+                {/* Chat with Seller & Contact Buttons */}
+                <div className="pt-2.5 mt-2 border-t border-[#2A2A2A] space-y-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openChatWithSeller(p, () => onNavigate?.("messages"));
+                    }}
+                    className="w-full py-2 px-2 bg-[#008751] hover:bg-[#007043] text-white text-[11px] font-black rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors shadow-xs border border-emerald-500/30 cursor-pointer"
+                  >
+                    <span>💬 Chat with Seller</span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {rawPhone ? (
+                      <>
+                        <a 
+                          href={`tel:${rawPhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
+                        >
+                          <Phone className="w-3 h-3 text-gray-300" />
+                          <span>Call</span>
+                        </a>
+                        <a 
+                          href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello, I saw your product "${p.title}" on FU MARKET. Is it still available?`)}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-[11px] rounded-xl text-center flex items-center justify-center gap-1 transition-colors shadow-2xs"
+                        >
+                          <MessageSquare className="w-3 h-3 fill-gray-950 text-gray-950" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProductDetails(p);
+                        }}
+                        className="col-span-2 py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-300 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
                       >
-                        <Phone className="w-3 h-3 text-gray-300" />
-                        <span>Call</span>
-                      </a>
-                      <a 
-                        href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello, I saw your product "${p.title}" on FUWUKARI NaijaMart. Is it still available?`)}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-[11px] rounded-xl text-center flex items-center justify-center gap-1 transition-colors shadow-2xs"
-                      >
-                        <MessageSquare className="w-3 h-3 fill-gray-950 text-gray-950" />
-                        <span>WhatsApp</span>
-                      </a>
-                    </>
-                  ) : (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedProductDetails(p);
-                      }}
-                      className="col-span-2 py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-300 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
-                    >
-                      <MessageSquare className="w-3 h-3 text-[#10B981]" />
-                      <span>View Details</span>
-                    </button>
-                  )}
+                        <MessageSquare className="w-3 h-3 text-[#10B981]" />
+                        <span>View Details</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

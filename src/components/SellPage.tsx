@@ -118,7 +118,9 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
       return;
     }
 
-    const uid = auth.currentUser?.uid || user?.uid || 'stephenaleje61';
+    const activeUser = auth.currentUser || user;
+    const uid = activeUser?.uid || 'stephenaleje61';
+    const sellerDisplayName = activeUser?.displayName || activeUser?.email?.split('@')[0] || (uid === 'stephenaleje61' ? 'stephenaleje61' : 'FU Market Seller');
     const newId = 'prod_' + Date.now().toString();
 
     // Default image if no file was picked
@@ -128,11 +130,10 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
       : [fallbackImage];
 
     // 1. INSTANT SHOW ON SUBMIT - ZERO SECOND DELAY
-    // Auto-approve and hardcode user priority
     const newProduct = {
       id: newId,
       title: title.trim(),
-      description: description.trim() || 'Direct from verified seller on NaijaMart Hub.',
+      description: description.trim() || 'Direct from verified seller on FU MARKET.',
       category: category || 'Phones & Tablets',
       condition: condition || 'Used',
       price: numericPrice,
@@ -145,9 +146,12 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
       images: initialImages,
       coverImage: initialImages[0],
       imageUrl: initialImages[0],
-      userId: auth.currentUser?.uid || 'stephenaleje61',
-      username: 'stephenaleje61',
-      sellerName: 'stephenaleje61',
+      userId: uid,
+      username: sellerDisplayName,
+      sellerName: sellerDisplayName,
+      sellerId: uid,
+      sellerEmail: activeUser?.email || '',
+      sellerAvatar: activeUser?.photoURL || '',
       ownerUid: uid,
       status: 'approved',
       isApproved: true,
@@ -247,10 +251,10 @@ export const SellPage: React.FC<SellPageProps> = ({ onNavigate, onOpenAuth }) =>
           <Tag className="w-3.5 h-3.5" /> Post an Item
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-          Sell on NaijaMart
+          Sell on FU MARKET
         </h1>
         <p className="text-xs sm:text-sm text-gray-400 mt-1">
-          Buyers in FUWukari and Nigeria contact you directly on WhatsApp or phone call.
+          Buy. Sell. Connect. Buyers message you directly in real time or via WhatsApp and phone call.
         </p>
       </div>
 

@@ -78,10 +78,10 @@ export const PwaInstallBanner: React.FC = () => {
           </div>
           <div>
             <h4 className="text-xs font-black text-gray-900 leading-tight">
-              Install NaijaMart Hub App
+              Install FU MARKET App
             </h4>
             <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
-              Add to Home Screen for fast access and offline safety protocols.
+              Buy. Sell. Connect. Add to Home Screen for instant chat and marketplace alerts.
             </p>
           </div>
         </div>

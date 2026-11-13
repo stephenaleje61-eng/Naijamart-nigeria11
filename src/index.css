@@ -46,3 +46,38 @@ body {
 .animate-slide-up {
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@keyframes fu-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.fu-marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: fu-marquee 34s linear infinite;
+}
+
+@media (hover: hover) {
+  .fu-marquee-wrapper:hover .fu-marquee-track {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fu-marquee-wrapper {
+    overflow-x: auto;
+  }
+  .fu-marquee-track {
+    animation: none;
+  }
+  .fu-marquee-duplicate {
+    display: none;
+  }
+}
+

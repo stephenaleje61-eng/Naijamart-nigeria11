@@ -44,7 +44,13 @@ export const AuthModal: React.FC = () => {
     } catch (err: any) {
       const errCode = String(err?.code || '');
       const errMsg = String(err?.message || '');
-      if (errCode === 'auth/operation-not-allowed' || errCode.includes('operation-not-allowed') || errMsg.includes('operation-not-allowed')) {
+      if (
+        errCode === 'auth/operation-not-allowed' ||
+        errCode === 'auth/admin-restricted-operation' ||
+        errCode.includes('operation-not-allowed') ||
+        errCode.includes('admin-restricted-operation') ||
+        errMsg.includes('operation-not-allowed')
+      ) {
         // Fallback user created in AuthContext, safely dismiss modal
         closeAuthModal();
         return;

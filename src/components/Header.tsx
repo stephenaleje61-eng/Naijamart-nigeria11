@@ -140,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <img 
             src="/icon.png" 
-            alt="NaijaMarket Hub" 
+            alt="FU MARKET" 
             className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-xs bg-[#008751]" 
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
@@ -151,11 +151,11 @@ export const Header: React.FC<HeaderProps> = ({
           />
           <div>
             <div className="flex items-center">
-              <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight">NaijaMarket</span>
-              <span className="text-xl sm:text-2xl font-black text-[#008751] tracking-tight ml-1">Hub</span>
+              <span className="text-xl sm:text-2xl font-black text-[#1a1a1a] tracking-tight">FU</span>
+              <span className="text-xl sm:text-2xl font-black text-[#008751] tracking-tight ml-1">MARKET</span>
             </div>
             <p className="text-[10px] text-gray-500 font-medium hidden sm:block -mt-1">
-              Buy & Sell Across Nigeria | Wukari & Taraba
+              Buy. Sell. Connect. | Wukari & Nigeria
             </p>
           </div>
         </div>

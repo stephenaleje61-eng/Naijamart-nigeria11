@@ -22,7 +22,7 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="flex items-center gap-2 mb-3">
               <img 
                 src="/icon.png" 
-                alt="NaijaMarket Hub" 
+                alt="FU MARKET" 
                 className="w-8 h-8 rounded-lg object-contain bg-[#008751]" 
                 onError={(e) => {
                   const target = e.currentTarget as HTMLImageElement;
@@ -32,11 +32,11 @@ export const Footer: React.FC<FooterProps> = ({
                 }}
               />
               <span className="text-xl font-black text-white tracking-tight">
-                NaijaMarket <span className="text-[#008751]">Hub</span>
+                FU <span className="text-[#008751]">MARKET</span>
               </span>
             </div>
             <p className="text-gray-400 text-xs leading-relaxed mb-3">
-              Nigeria's #1 Marketplace combining Jumia reliability, Temu flash deals, and the biggest Okada Motorcycle Market across Wukari, Taraba, and Nigeria.
+              Buy. Sell. Connect. Campus & verified marketplace combining real-time buyer-seller messaging, flash deals, and the Okada Motorcycle Market across Wukari, Taraba, and Nigeria.
             </p>
             <div className="flex items-center gap-2 text-xs text-orange-400 font-bold">
               <Bike className="w-4 h-4 text-[#fb6514]" />
@@ -114,7 +114,7 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         <div className="pt-6 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} NaijaMarket Hub • 100% Free Ads</p>
+          <p>© {new Date().getFullYear()} FU MARKET • Buy. Sell. Connect.</p>
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400 font-semibold">
             <a href="/squatter" className="hover:text-emerald-400 transition-colors">🏠 FUW Squatter Board</a>
             <span>•</span>

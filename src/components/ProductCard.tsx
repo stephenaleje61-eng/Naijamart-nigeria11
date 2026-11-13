@@ -19,6 +19,7 @@ import { SafeImage } from './SafeImage';
 import { isProductSaved, toggleSavedProduct } from '../services/favoritesService';
 import { getSellerReputation } from '../services/reputationService';
 import { useToast } from '../context/ToastContext';
+import { useMessaging } from '../context/MessagingContext';
 
 interface ProductCardProps {
   product: Product;
@@ -36,6 +37,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onRateClick,
 }) => {
   const { showToast } = useToast();
+  const { openChatWithSeller } = useMessaging();
   const [saved, setSaved] = useState<boolean>(() => isProductSaved(product.id));
   const [showMenu, setShowMenu] = useState(false);
 
@@ -231,8 +233,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
       </div>
 
-      {/* Action Buttons: Bargain Offer + Call + WhatsApp */}
+      {/* Action Buttons: Chat with Seller + Bargain Offer + Call + WhatsApp */}
       <div className="p-2.5 pt-0 space-y-1.5 mt-1">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openChatWithSeller(product);
+          }}
+          className="w-full bg-[#008751] hover:bg-[#007043] text-white py-2 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-colors shadow-xs border border-emerald-500/30 active:scale-98 cursor-pointer"
+        >
+          <span>💬 Chat with Seller</span>
+        </button>
+
         {onBargainClick && (
           <button
             onClick={(e) => {
@@ -260,7 +273,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {/* WhatsApp Button */}
           <a
             href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
-              `Hello ${product.sellerName || 'Seller'}, I am contacting you from FUWUKARI NaijaMart regarding "${product.title}" listed for ${formatNaira(
+              `Hello ${product.sellerName || 'Seller'}, I am contacting you from FU MARKET regarding "${product.title}" listed for ${formatNaira(
                 product.price
               )} in ${product.location || 'FUWukari'}. Is it still available?`
             )}`}

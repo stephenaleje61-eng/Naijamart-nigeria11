@@ -1,7 +1,124 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User profile & online/last-seen presence
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+
+      match /{subpath=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Real-time buyer <-> seller product conversations (strictly participant-only)
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && (resource == null || request.auth.uid in resource.data.participants);
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.conversationId == conversationId
+        && request.resource.data.productId is string
+        && request.resource.data.productTitle is string;
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.conversationId == resource.data.conversationId
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.buyerId == resource.data.buyerId
+        && request.resource.data.sellerId == resource.data.sellerId;
+      allow delete: if false;
+    }
+
+    // Real-time direct messages (strictly participant-only)
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.receiverId in request.resource.data.participants
+        && request.resource.data.receiverId != request.auth.uid
+        && request.resource.data.conversationId is string
+        && request.resource.data.messageType in ['text', 'image']
+        && ((request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 4000)
+            || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() > 0));
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participants
+        && resource.data.receiverId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveredAt', 'readAt']);
+      allow delete: if false;
+    }
+
+    // Preserve all existing FU MARKET public & campus collections without regression
+    match /products/{docId} {
+      allow read, write: if true;
+    }
+    match /wantedPosts/{docId} {
+      allow read, write: if true;
+    }
+    match /wanted_items/{docId} {
+      allow read, write: if true;
+    }
+    match /houses/{docId} {
+      allow read, write: if true;
+    }
+    match /roommates/{docId} {
+      allow read, write: if true;
+    }
+    match /housingReports/{docId} {
+      allow read, write: if true;
+    }
+    match /productReports/{docId} {
+      allow read, write: if true;
+    }
+    match /sellerRatings/{docId} {
+      allow read, write: if true;
+    }
+    match /squatter_board/{docId} {
+      allow read, write: if true;
+    }
+    match /savedProducts/{docId} {
+      allow read, write: if true;
+    }
+    match /registeredPhones/{docId=**} {
+      allow read, write: if true;
+    }
+    match /protectedPhones/{docId=**} {
+      allow read, write: if true;
+    }
+    match /stolenPhones/{docId=**} {
+      allow read, write: if true;
+    }
+    match /trackLogs/{docId} {
+      allow read, write: if true;
+    }
+    match /recovery_actions/{docId} {
+      allow read, write: if true;
+    }
+    match /cgpaCalculations/{docId} {
+      allow read, write: if true;
+    }
+    match /feedbackLocal/{docId} {
+      allow read, write: if true;
+    }
+    match /students/{docId} {
+      allow read, write: if true;
+    }
+    match /friend_requests/{docId} {
+      allow read, write: if true;
+    }
+    match /chats/{docId=**} {
       allow read, write: if true;
     }
   }

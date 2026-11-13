@@ -59,22 +59,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Sync user presence to Firestore users collection
+  // Sync user presence (online / offline status) to Firestore users collection
   useEffect(() => {
-    if (user?.uid) {
+    if (!user?.uid) return;
+
+    const userRef = doc(db, 'users', user.uid);
+    const displayName = user.displayName || user.email?.split('@')[0] || 'FU Market User';
+
+    const setPresence = (online: boolean) => {
       try {
-        setDoc(doc(db, 'users', user.uid), {
+        setDoc(userRef, {
           uid: user.uid,
-          displayName: user.displayName || user.email?.split('@')[0] || 'Naija User',
+          displayName,
           email: user.email || '',
           photoURL: user.photoURL || '',
-          isOnline: true,
+          isOnline: online,
           lastSeen: serverTimestamp()
         }, { merge: true }).catch(() => {});
       } catch (err) {
         console.warn('User presence sync note:', err);
       }
-    }
+    };
+
+    setPresence(true);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setPresence(false);
+      } else if (document.visibilityState === 'visible') {
+        setPresence(true);
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      setPresence(false);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [user]);
 
   const openAuthModal = (mode: 'signin' | 'signup' | 'reset' = 'signin') => {
@@ -91,7 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const code = String(err.code || '');
     const msg = String(err.message || '');
     return code === 'auth/operation-not-allowed' ||
+           code === 'auth/admin-restricted-operation' ||
            code.includes('operation-not-allowed') ||
+           code.includes('admin-restricted-operation') ||
            msg.includes('auth/operation-not-allowed') ||
            msg.includes('OPERATION_NOT_ALLOWED');
   };
@@ -175,6 +204,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOutUser = async () => {
+    if (user?.uid) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          isOnline: false,
+          lastSeen: serverTimestamp()
+        }, { merge: true });
+      } catch {}
+    }
     try {
       await signOut(auth);
     } catch {}

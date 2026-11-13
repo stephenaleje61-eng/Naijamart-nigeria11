@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "NaijaMart Hub Self-Tracking",
-  "short_name": "NaijaTrack",
-  "description": "Protect Your Phone Today. Find It Yourself Tomorrow. Registered device protection and self-service recovery.",
+  "name": "FU MARKET",
+  "short_name": "FU MARKET",
+  "description": "FU MARKET — Buy. Sell. Connect.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

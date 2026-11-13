@@ -48,20 +48,20 @@ export const NaijaMartNavigation: React.FC<NaijaMartNavigationProps> = ({
             onClick={() => onNavigate('market')} 
             className="flex items-center gap-2.5 cursor-pointer select-none group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#008751] to-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
-              N
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#008751] to-emerald-500 text-white flex items-center justify-center font-black text-base tracking-tighter shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
+              FU
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-lg font-black tracking-tight text-gray-900 group-hover:text-[#008751] transition-colors">
-                  NaijaMart <span className="text-[#008751]">Hub</span>
+                  FU <span className="text-[#008751]">MARKET</span>
                 </span>
                 <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-[#008751]">
-                  MARKET & RECOVERY
+                  BUY. SELL. CONNECT.
                 </span>
               </div>
               <p className="text-[10px] text-gray-500 font-medium -mt-0.5 hidden sm:block">
-                Nigeria's #1 Campus & Verified Goods Platform
+                Buy. Sell. Connect. — Verified Campus Marketplace
               </p>
             </div>
           </div>

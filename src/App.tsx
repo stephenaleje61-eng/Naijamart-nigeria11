@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { MessagingProvider, useMessaging } from './context/MessagingContext';
 import { StudentProvider } from './context/StudentContext';
 import { MarketPage } from './components/MarketPage';
 import { SellPage } from './components/SellPage';
 import { MyProductsPage } from './components/MyProductsPage';
 import { TrackPage } from './components/TrackPage';
 import { HubsPage } from './components/HubsPage';
+import { MessagesPage } from './components/MessagesPage';
 import { BottomNav } from './components/BottomNav';
 import { AuthModal } from './components/AuthModal';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
@@ -17,7 +19,7 @@ import { WantedBoardPage } from './components/WantedBoardPage';
 import { SavedProductsPage } from './components/SavedProductsPage';
 import { ProductDetailsModal } from './components/ProductDetailsModal';
 import { Product } from './types';
-import { LogIn, LogOut, User, Globe, Home, GraduationCap, Sparkles, Heart } from 'lucide-react';
+import { LogIn, LogOut, User, Globe, Home, GraduationCap, Sparkles, Heart, MessageSquare } from 'lucide-react';
 
 function AppContent() {
   // Set initial page with URL recognition for /cgpa-calculator, /wanted, /saved, /naijahub, etc.
@@ -43,6 +45,12 @@ function AppContent() {
         return 'saved';
       }
       if (
+        window.location.pathname.includes('/messages') ||
+        window.location.search.includes('messages')
+      ) {
+        return 'messages';
+      }
+      if (
         window.location.pathname.includes('/naijahub') || 
         window.location.search.includes('naijahub') ||
         window.location.pathname.includes('/local-language')
@@ -54,6 +62,11 @@ function AppContent() {
   });
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { user, openAuthModal, signOutUser } = useAuth();
+  const { totalUnreadCount, registerNavigateCallback } = useMessaging();
+
+  useEffect(() => {
+    registerNavigateCallback(() => setPage('messages'));
+  }, [registerNavigateCallback]);
 
   // If user is inside NaijaHub Africa portal, render it as a full-page experience
   if (page === 'naijahub') {
@@ -75,15 +88,15 @@ function AppContent() {
             onClick={() => setPage("market")} 
             className="flex items-center gap-2.5 cursor-pointer select-none"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#008751] text-white flex items-center justify-center font-black text-xl shadow-md border border-[#2A2A2A]">
-              N
+            <div className="w-10 h-10 rounded-xl bg-[#008751] text-white flex items-center justify-center font-black text-base tracking-tighter shadow-md border border-[#2A2A2A]">
+              FU
             </div>
             <div>
               <span className="text-lg font-black tracking-tight text-white">
-                NaijaMart <span className="text-[#008751]">Hub</span>
+                FU <span className="text-[#008751]">MARKET</span>
               </span>
               <p className="text-[10px] text-gray-400 font-medium -mt-0.5">
-                Nigeria's #1 Campus Market & Protection
+                Buy. Sell. Connect.
               </p>
             </div>
           </div>
@@ -131,6 +144,20 @@ function AppContent() {
               }`}
             >
               My Goods
+            </button>
+            <button
+              onClick={() => setPage("messages")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                page === "messages" ? "bg-[#008751] text-white shadow-sm" : "text-emerald-300 hover:text-white hover:bg-[#2A2A2A]"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Messages 💬</span>
+              {totalUnreadCount > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 bg-[#25D366] text-gray-950 text-[10px] font-black rounded-full flex items-center justify-center">
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setPage("hubs")}
@@ -198,6 +225,23 @@ function AppContent() {
             >
               <Sparkles className="w-3 h-3 text-amber-400" />
               <span>Wanted</span>
+            </button>
+
+            <button
+              onClick={() => setPage("messages")}
+              className={`md:hidden px-2 py-1.5 rounded-xl text-[11px] font-black border flex items-center gap-1 cursor-pointer transition-all relative ${
+                page === "messages"
+                  ? "bg-[#008751] text-white border-[#008751]"
+                  : "bg-[#151515] text-emerald-300 hover:text-white border-[#2A2A2A]"
+              }`}
+            >
+              <MessageSquare className="w-3 h-3" />
+              <span>Chat</span>
+              {totalUnreadCount > 0 && (
+                <span className="min-w-[15px] h-[15px] px-1 bg-[#25D366] text-gray-950 text-[9px] font-black rounded-full flex items-center justify-center">
+                  {totalUnreadCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -277,6 +321,7 @@ function AppContent() {
         )}
         {page === "sell" && <SellPage onNavigate={(p) => setPage(p)} onOpenAuth={openAuthModal} />}
         {page === "my-products" && <MyProductsPage onNavigate={(p) => setPage(p)} onOpenAuth={openAuthModal} />}
+        {page === "messages" && <MessagesPage onNavigate={(p) => setPage(p)} />}
         {page === "track" && <TrackPage onNavigate={(p) => setPage(p)} />}
         {page === "hubs" && <HubsPage onNavigate={(p) => setPage(p)} />}
         {page === "houses" && (
@@ -313,9 +358,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <StudentProvider>
-          <AppContent />
-        </StudentProvider>
+        <MessagingProvider>
+          <StudentProvider>
+            <AppContent />
+          </StudentProvider>
+        </MessagingProvider>
       </ToastProvider>
     </AuthProvider>
   );

@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { useMessaging } from '../context/MessagingContext';
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { deleteProductImageFromStorage } from '../utils/imageUpload';
@@ -38,6 +39,7 @@ interface MyProductsPageProps {
 
 export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOpenAuth }) => {
   const { user } = useAuth();
+  const { openChatWithSeller } = useMessaging();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
 
   // Fetch user's products with dual Firestore and localStorage sync
   useEffect(() => {
-    const activeUid = user?.uid || auth.currentUser?.uid || 'stephenaleje61';
+    const activeUid = user?.uid || auth.currentUser?.uid || '';
 
     const loadLocalMyProducts = () => {
       try {
@@ -71,13 +73,19 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
       const uniqueMap = new Map();
       for (const item of combined) {
         if (item && item.id) {
-          const isMine = 
-            item.ownerUid === activeUid || 
-            item.userId === activeUid || 
-            item.userId === 'stephenaleje61' || 
-            item.username === 'stephenaleje61' || 
-            item.sellerName === 'stephenaleje61' ||
-            item.ownerUid === 'stephenaleje61';
+          const isLegacyStephen =
+            activeUid === 'stephenaleje61' &&
+            (item.userId === 'stephenaleje61' ||
+              item.username === 'stephenaleje61' ||
+              item.sellerName === 'stephenaleje61' ||
+              item.ownerUid === 'stephenaleje61');
+
+          const isMine =
+            Boolean(activeUid) &&
+            (item.sellerId === activeUid ||
+              item.ownerUid === activeUid ||
+              item.userId === activeUid ||
+              isLegacyStephen);
 
           if (isMine) {
             uniqueMap.set(item.id, item);
@@ -189,7 +197,7 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
 
       setActionMessage({
         type: 'success',
-        text: `"${product.title}" has been deleted from NaijaMart.`,
+        text: `"${product.title}" has been deleted from FU MARKET.`,
       });
     } catch (err: any) {
       console.error('Error deleting product:', err);
@@ -212,7 +220,7 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
           </div>
           <h2 className="text-2xl font-black text-white mb-2">My Posted Goods</h2>
           <p className="text-gray-400 mb-6 text-sm">
-            Sign in to view, edit, or remove the products you have posted on NaijaMart Hub.
+            Sign in to view, edit, or remove the products you have posted on FU MARKET.
           </p>
           <button
             onClick={() => onOpenAuth ? onOpenAuth() : onNavigate('market')}
@@ -351,8 +359,16 @@ export const MyProductsPage: React.FC<MyProductsPageProps> = ({ onNavigate, onOp
                 </div>
               </div>
 
-              {/* Action Buttons: Edit & Delete */}
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[#2A2A2A]">
+              {/* Action Buttons: Chat with Seller, Edit & Delete */}
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-[#2A2A2A]">
+                <button
+                  type="button"
+                  onClick={() => openChatWithSeller(item, () => onNavigate('messages'))}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#008751] hover:bg-[#007043] text-white rounded-xl text-xs font-black transition-colors cursor-pointer shadow-xs"
+                >
+                  <span>💬 Chat with Seller</span>
+                </button>
+
                 <button
                   onClick={() => handleStartEdit(item)}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 border border-[#2A2A2A] rounded-xl text-xs font-bold transition-colors cursor-pointer"

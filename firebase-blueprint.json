@@ -30,19 +30,81 @@
     },
     "User": {
       "title": "User",
-      "description": "User profile with contact info and location",
+      "description": "User profile with contact info and online presence",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "maxLength": 128 },
         "email": { "type": "string", "format": "email" },
-        "fullName": { "type": "string", "maxLength": 100 },
-        "phone": { "type": "string", "maxLength": 30 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string" },
+        "isOnline": { "type": "boolean" },
+        "lastSeen": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email"]
+      "required": ["uid"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Real-time 1:1 product inquiry conversation between buyer and seller",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string", "maxLength": 128 },
+        "participants": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "participantInfo": { "type": "object" },
+        "productId": { "type": "string" },
+        "productTitle": { "type": "string" },
+        "productPrice": { "type": "number" },
+        "productImage": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastMessageType": { "type": "string", "enum": ["text", "image"] },
+        "lastSenderId": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "unreadCounts": { "type": "object" },
+        "typing": { "type": "object" },
+        "deletedFor": { "type": "array", "items": { "type": "string" } },
+        "clearedBefore": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversationId", "participants", "productId", "productTitle", "buyerId", "sellerId"]
+    },
+    "DirectMessage": {
+      "title": "DirectMessage",
+      "description": "Individual real-time text or image message in a conversation",
+      "type": "object",
+      "properties": {
+        "messageId": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "text": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "deliveredAt": { "type": "string", "format": "date-time" },
+        "readAt": { "type": "string", "format": "date-time" },
+        "messageType": { "type": "string", "enum": ["text", "image"] }
+      },
+      "required": ["messageId", "conversationId", "participants", "senderId", "receiverId", "messageType"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Authenticated user profile and real-time online/last-seen presence"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Participant-scoped real-time product conversations"
+    },
+    "/messages/{messageId}": {
+      "schema": "DirectMessage",
+      "description": "Participant-scoped real-time chat messages"
+    },
     "/registeredPhones/{deviceId}": {
       "schema": "RegisteredPhone",
       "description": "Registered devices with owner credentials and location telemetry"

@@ -19,6 +19,7 @@ import { db } from '../firebase';
 import { formatNaira } from '../utils/formatters';
 import { SafeImage } from './SafeImage';
 import { useToast } from '../context/ToastContext';
+import { useMessaging } from '../context/MessagingContext';
 
 interface SavedProductsPageProps {
   onNavigate: (route: string) => void;
@@ -34,6 +35,7 @@ export const SavedProductsPage: React.FC<SavedProductsPageProps> = ({
   onOpenRate
 }) => {
   const { showToast } = useToast();
+  const { openChatWithSeller } = useMessaging();
   const [savedIds, setSavedIds] = useState<string[]>(getSavedProductIds());
   const [savedProducts, setSavedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -224,40 +226,53 @@ export const SavedProductsPage: React.FC<SavedProductsPageProps> = ({
                   )}
                 </div>
 
-                {/* Direct Action Buttons */}
-                <div className="pt-3 mt-2 border-t border-[#2A2A2A] grid grid-cols-2 gap-2">
-                  {rawPhone ? (
-                    <>
-                      <a
-                        href={`tel:${rawPhone}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
+                {/* Chat with Seller & Direct Action Buttons */}
+                <div className="pt-3 mt-2 border-t border-[#2A2A2A] space-y-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openChatWithSeller(p, () => onNavigate('messages'));
+                    }}
+                    className="w-full py-2 px-2 bg-[#008751] hover:bg-[#007043] text-white text-[11px] font-black rounded-xl text-center flex items-center justify-center gap-1.5 transition-colors shadow-xs border border-emerald-500/30 cursor-pointer"
+                  >
+                    <span>💬 Chat with Seller</span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {rawPhone ? (
+                      <>
+                        <a
+                          href={`tel:${rawPhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-200 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
+                        >
+                          <Phone className="w-3 h-3 text-gray-300" />
+                          <span>Call</span>
+                        </a>
+                        <a
+                          href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello, I saved your product "${p.title}" on FU MARKET. Is it still available?`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-[11px] rounded-xl text-center flex items-center justify-center gap-1 transition-colors shadow-2xs"
+                        >
+                          <MessageSquare className="w-3 h-3 fill-gray-950 text-gray-950" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onSelectProduct) onSelectProduct(p);
+                        }}
+                        className="col-span-2 py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-300 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
                       >
-                        <Phone className="w-3 h-3 text-gray-300" />
-                        <span>Call</span>
-                      </a>
-                      <a
-                        href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello, I saved your product "${p.title}" on FUWUKARI NaijaMart. Is it still available?`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="py-2 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-[11px] rounded-xl text-center flex items-center justify-center gap-1 transition-colors shadow-2xs"
-                      >
-                        <MessageSquare className="w-3 h-3 fill-gray-950 text-gray-950" />
-                        <span>WhatsApp</span>
-                      </a>
-                    </>
-                  ) : (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onSelectProduct) onSelectProduct(p);
-                      }}
-                      className="col-span-2 py-2 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-gray-300 text-[11px] font-bold rounded-xl text-center flex items-center justify-center gap-1 transition-colors border border-[#2A2A2A]"
-                    >
-                      <span>View Details</span>
-                    </button>
-                  )}
+                        <span>View Details</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

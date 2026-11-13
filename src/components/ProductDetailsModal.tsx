@@ -26,6 +26,7 @@ import {
 import { Product } from '../types';
 import { formatNaira, formatTimeAgo } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
+import { useMessaging } from '../context/MessagingContext';
 import { SafeImage } from './SafeImage';
 import { useStudent } from '../context/StudentContext';
 import { isProductSaved, toggleSavedProduct } from '../services/favoritesService';
@@ -49,6 +50,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
   onOpenBargainChat,
 }) => {
   const { showToast } = useToast();
+  const { openChatWithSeller } = useMessaging();
   const { openPrivateChatWith, sendFriendRequest } = useStudent();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState<boolean>(() => (product ? isProductSaved(product.id) : false));
@@ -330,8 +332,20 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                       </div>
                     </div>
 
-                    {/* 3 ACTION BUTTONS: Bargain Chat, Call, WhatsApp */}
+                    {/* ACTION BUTTONS: Chat with Seller, Bargain Chat, Call, WhatsApp */}
                     <div className="flex flex-col gap-2 mt-2">
+                      {/* Primary Internal Real-Time Chat Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openChatWithSeller(product);
+                          onClose();
+                        }}
+                        className="w-full bg-[#008751] hover:bg-[#007043] text-white py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 border border-emerald-500 cursor-pointer"
+                      >
+                        <span>💬 Chat with Seller</span>
+                      </button>
+
                       {/* Bargain Chat Button (WhatsApp Style) */}
                       {onOpenBargainChat && (
                         <button
@@ -403,7 +417,7 @@ export const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({
                         href={`https://wa.me/${formattedWhatsapp}?text=${encodeURIComponent(
                           `Hello ${product.sellerName || 'Seller'}, I am interested in your listing "${product.title}" (${formatNaira(
                             product.price
-                          )}) on NaijaMarket Hub. Is it still available for inspection in ${product.location || 'your area'}?`
+                          )}) on FU MARKET. Is it still available for inspection in ${product.location || 'your area'}?`
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
