@@ -390,6 +390,8 @@ export function subscribeConversationMessages(
     where('participants', 'array-contains', uid)
   );
 
+  const deliveredSent = new Set<string>();
+
   return onSnapshot(
     q,
     (snapshot) => {
@@ -411,7 +413,8 @@ export function subscribeConversationMessages(
           messageId: msg.messageId || docSnap.id,
         });
 
-        if (msg.receiverId === uid && !msg.deliveredAt) {
+        if (msg.receiverId === uid && !msg.deliveredAt && !deliveredSent.has(docSnap.id)) {
+          deliveredSent.add(docSnap.id);
           undeliveredRefs.push(docSnap.id);
         }
       });
@@ -424,12 +427,14 @@ export function subscribeConversationMessages(
 
       onUpdate(list);
 
-      // Mark newly received messages as delivered in background
+      // Mark newly received messages as delivered once
       if (undeliveredRefs.length > 0) {
         undeliveredRefs.forEach((msgId) => {
           updateDoc(doc(db, 'messages', msgId), {
             deliveredAt: serverTimestamp(),
-          }).catch(() => {});
+          }).catch(() => {
+            deliveredSent.delete(msgId);
+          });
         });
       }
     },
@@ -528,6 +533,8 @@ export async function sendDirectMessage(params: {
   }
 }
 
+const readReceiptSent = new Set<string>();
+
 /**
  * Marks all unread incoming messages in a conversation as read and resets the user's unread count.
  */
@@ -539,22 +546,25 @@ export async function markConversationRead(
   if (!conversation?.conversationId || !currentUid) return;
   if (!conversation.participants?.includes(currentUid)) return;
 
-  const currentUnread = conversation.unreadCounts?.[currentUid] || 0;
-  if (currentUnread > 0) {
+  const unreadMsgs = messages.filter(
+    (m) => m.receiverId === currentUid && !m.readAt && !readReceiptSent.has(m.messageId)
+  );
+
+  const currentUnread = Number(conversation.unreadCounts?.[currentUid] || 0);
+  if (currentUnread > 0 || unreadMsgs.length > 0) {
     updateDoc(doc(db, 'conversations', conversation.conversationId), {
       [`unreadCounts.${currentUid}`]: 0,
     }).catch(() => {});
   }
 
-  const unreadMsgs = messages.filter(
-    (m) => m.receiverId === currentUid && !m.readAt
-  );
-
   for (const m of unreadMsgs) {
+    readReceiptSent.add(m.messageId);
     updateDoc(doc(db, 'messages', m.messageId), {
       readAt: serverTimestamp(),
       deliveredAt: m.deliveredAt || serverTimestamp(),
-    }).catch(() => {});
+    }).catch(() => {
+      readReceiptSent.delete(m.messageId);
+    });
   }
 }
 

@@ -19,21 +19,24 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Brand & Okada focus */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <img 
-                src="/icon.png" 
-                alt="FU MARKET" 
-                className="w-8 h-8 rounded-lg object-contain bg-[#008751]" 
-                onError={(e) => {
-                  const target = e.currentTarget as HTMLImageElement;
-                  if (!target.src.endsWith('/icon.svg')) {
-                    target.src = '/icon.svg';
-                  }
-                }}
-              />
-              <span className="text-xl font-black text-white tracking-tight">
-                FU <span className="text-[#008751]">MARKET</span>
-              </span>
+            <div className="mb-3 space-y-2">
+              <div className="inline-flex items-center bg-white rounded-xl px-2.5 py-1.5 shadow-xs">
+                <img 
+                  src="/fuwukari-logo.png" 
+                  alt="Federal University Wukari Official Logo" 
+                  className="h-8 w-auto object-contain" 
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <img 
+                  src="/fuwukari-crest.png" 
+                  alt="FU MARKET" 
+                  className="w-7 h-7 rounded-lg object-contain bg-white p-0.5" 
+                />
+                <span className="text-xl font-black text-white tracking-tight">
+                  FU <span className="text-[#008751]">MARKET</span>
+                </span>
+              </div>
             </div>
             <p className="text-gray-400 text-xs leading-relaxed mb-3">
               Buy. Sell. Connect. Campus & verified marketplace combining real-time buyer-seller messaging, flash deals, and the Okada Motorcycle Market across Wukari, Taraba, and Nigeria.

@@ -48,8 +48,12 @@ export const NaijaMartNavigation: React.FC<NaijaMartNavigationProps> = ({
             onClick={() => onNavigate('market')} 
             className="flex items-center gap-2.5 cursor-pointer select-none group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#008751] to-emerald-500 text-white flex items-center justify-center font-black text-base tracking-tighter shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
-              FU
+            <div className="w-10 h-10 rounded-xl bg-white p-1 border border-gray-200 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform overflow-hidden">
+              <img
+                src="/fuwukari-crest.png"
+                alt="Federal University Wukari Official Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

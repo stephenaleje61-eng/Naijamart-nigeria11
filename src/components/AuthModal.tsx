@@ -10,6 +10,7 @@ export const AuthModal: React.FC = () => {
     setAuthMode, 
     signInWithEmail, 
     signUpWithEmail, 
+    signInWithGoogle,
     sendPasswordReset,
     signInGuest 
   } = useAuth();
@@ -47,9 +48,12 @@ export const AuthModal: React.FC = () => {
       if (
         errCode === 'auth/operation-not-allowed' ||
         errCode === 'auth/admin-restricted-operation' ||
+        errCode === 'auth/unauthorized-domain' ||
         errCode.includes('operation-not-allowed') ||
         errCode.includes('admin-restricted-operation') ||
-        errMsg.includes('operation-not-allowed')
+        errCode.includes('unauthorized-domain') ||
+        errMsg.includes('operation-not-allowed') ||
+        errMsg.includes('unauthorized-domain')
       ) {
         // Fallback user created in AuthContext, safely dismiss modal
         closeAuthModal();
@@ -83,17 +87,21 @@ export const AuthModal: React.FC = () => {
 
         {/* Modal Header */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-[#0A0A0A] border border-[#2A2A2A] text-[#10B981] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xs">
-            <ShieldCheck className="w-7 h-7" />
+          <div className="w-14 h-14 bg-white border border-[#2A2A2A] rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xs p-1.5 overflow-hidden">
+            <img
+              src="/fuwukari-crest.png"
+              alt="FU MARKET"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h3 className="text-xl font-black text-white">
-            {authMode === 'signin' && 'Sign In to Your Account'}
-            {authMode === 'signup' && 'Create Your Owner Account'}
+            {authMode === 'signin' && 'Sign In to FU MARKET'}
+            {authMode === 'signup' && 'Create FU MARKET Account'}
             {authMode === 'reset' && 'Reset Your Password'}
           </h3>
           <p className="text-xs text-gray-400 mt-1">
-            {authMode === 'signin' && 'Access your registered devices and live GPS tracking'}
-            {authMode === 'signup' && 'Protect your phone and secure ownership verification'}
+            {authMode === 'signin' && 'Chat with buyers & sellers or manage your listings'}
+            {authMode === 'signup' && 'Create a free account to post and chat in real time'}
             {authMode === 'reset' && 'Enter your registered email to receive a recovery link'}
           </p>
         </div>
@@ -195,17 +203,26 @@ export const AuthModal: React.FC = () => {
           </form>
         )}
 
-        {/* Guest sign-in shortcut for quick registration testing */}
-        <div className="mt-4 pt-4 border-t border-[#2A2A2A] flex items-center justify-between text-xs">
-          <button
-            type="button"
-            onClick={signInGuest}
-            className="text-gray-400 hover:text-gray-200 text-[11px] font-semibold underline cursor-pointer"
-          >
-            Quick Guest Demo Sign In
-          </button>
+        {/* Quick Sign In with Google & Continue as Guest */}
+        <div className="mt-4 pt-4 border-t border-[#2A2A2A] space-y-3 text-xs">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={signInWithGoogle}
+              className="py-2.5 px-3 bg-white hover:bg-gray-100 text-gray-900 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            >
+              <span>Sign In with Google</span>
+            </button>
+            <button
+              type="button"
+              onClick={signInGuest}
+              className="py-2.5 px-3 bg-[#0A0A0A] hover:bg-[#2A2A2A] text-emerald-300 border border-[#2A2A2A] rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>Continue as Guest</span>
+            </button>
+          </div>
 
-          <div>
+          <div className="text-center">
             {authMode === 'signin' ? (
               <span className="text-gray-400">
                 New user?{' '}

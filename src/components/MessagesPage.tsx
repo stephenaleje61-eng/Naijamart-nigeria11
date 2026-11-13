@@ -133,12 +133,23 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
 
   const activePartner = activeConversation ? getPartner(activeConversation) : null;
 
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
+
   // Check if partner is currently typing (within last 5 seconds)
   const partnerTypingTs =
     activeConversation && activePartner
       ? Number(activeConversation.typing?.[activePartner.uid] || 0)
       : 0;
-  const isPartnerTyping = partnerTypingTs > 0 && Date.now() - partnerTypingTs < 5000;
+  const isPartnerTyping = partnerTypingTs > 0 && nowTick - partnerTypingTs < 5000;
+
+  useEffect(() => {
+    if (!partnerTypingTs) return;
+    setNowTick(Date.now());
+    const id = setInterval(() => {
+      setNowTick(Date.now());
+    }, 2000);
+    return () => clearInterval(id);
+  }, [partnerTypingTs]);
 
   // Subscribe to messages for active conversation
   useEffect(() => {
@@ -175,6 +186,15 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ onNavigate }) => {
 
     return () => unsub();
   }, [currentUid, activeConversationId, activeConversation?.clearedBefore?.[currentUid]]);
+
+  // Ensure unread counter clears immediately even when new messages arrive in already-open thread
+  useEffect(() => {
+    if (!activeConversation || !currentUid) return;
+    const unread = Number(activeConversation.unreadCounts?.[currentUid] || 0);
+    if (unread > 0) {
+      markConversationRead(activeConversation, currentUid, messages);
+    }
+  }, [activeConversation, currentUid, messages]);
 
   // Subscribe to partner online/offline presence
   useEffect(() => {

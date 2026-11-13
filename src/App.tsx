@@ -88,15 +88,19 @@ function AppContent() {
             onClick={() => setPage("market")} 
             className="flex items-center gap-2.5 cursor-pointer select-none"
           >
-            <div className="w-10 h-10 rounded-xl bg-[#008751] text-white flex items-center justify-center font-black text-base tracking-tighter shadow-md border border-[#2A2A2A]">
-              FU
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md border border-[#2A2A2A] shrink-0 overflow-hidden">
+              <img
+                src="/fuwukari-crest.png"
+                alt="Federal University Wukari Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <span className="text-lg font-black tracking-tight text-white">
                 FU <span className="text-[#008751]">MARKET</span>
               </span>
               <p className="text-[10px] text-gray-400 font-medium -mt-0.5">
-                Buy. Sell. Connect.
+                FUWUKARI Campus • Buy. Sell. Connect.
               </p>
             </div>
           </div>

@@ -287,14 +287,23 @@ export default function MarketPage({ onNavigate }: any) {
       <div className="bg-gradient-to-r from-[#075B43] via-[#0B8751] to-[#151515] text-white rounded-3xl p-5 sm:p-8 shadow-md border border-[#2A2A2A] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="inline-block px-3 py-1 bg-black/40 border border-white/10 text-emerald-300 rounded-full text-xs font-black mb-2 uppercase tracking-wide">
-              Buy. Sell. Connect.
-            </span>
+            <div className="mb-2.5 flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center bg-white rounded-xl px-2.5 py-1.5 shadow-sm border border-white/20">
+                <img
+                  src="/fuwukari-logo.png"
+                  alt="Federal University Wukari (FUWUKARI) Official Logo"
+                  className="h-8 sm:h-10 w-auto object-contain"
+                />
+              </div>
+              <span className="inline-block px-3 py-1 bg-black/40 border border-white/10 text-emerald-300 rounded-full text-xs font-black uppercase tracking-wide">
+                Buy. Sell. Connect.
+              </span>
+            </div>
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight uppercase">
               WELCOME TO FU MARKET
             </h1>
             <p className="text-emerald-100/90 text-xs sm:text-sm mt-1">
-              Buy. Sell. Connect. Phones, Hostels, Okada & Gadgets across Rafin Kada, Behind School & Wukari Town
+              Federal University Wukari Marketplace • Phones, Hostels, Okada & Gadgets across Rafin Kada, Behind School & Wukari Town
             </p>
           </div>
 

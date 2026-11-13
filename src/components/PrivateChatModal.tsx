@@ -14,7 +14,10 @@ import {
   UserPlus,
   Tag,
   Clock,
-  Sparkles
+  Sparkles,
+  ImagePlus,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { 
   collection, 
@@ -31,6 +34,7 @@ import { formatNaira } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
 import { ChatMessage } from '../types';
 import { SafeImage } from './SafeImage';
+import { uploadChatImage } from '../services/messagingService';
 
 export const PrivateChatModal: React.FC = () => {
   const { 
@@ -46,7 +50,11 @@ export const PrivateChatModal: React.FC = () => {
   const { showToast } = useToast();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState<boolean>(true);
+  const [chatError, setChatError] = useState<string | null>(null);
   const [inputText, setInputText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportReason, setReportReason] = useState('Suspicious / Scam behavior');
@@ -56,6 +64,7 @@ export const PrivateChatModal: React.FC = () => {
   const [offerAmountInput, setOfferAmountInput] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!activeChatPartner || !profile) return null;
 
@@ -88,6 +97,8 @@ export const PrivateChatModal: React.FC = () => {
   // Real-time onSnapshot listener for messages in this private chat
   useEffect(() => {
     if (!chatId) return;
+    setLoadingMessages(true);
+    setChatError(null);
 
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const q = query(messagesRef);
@@ -112,36 +123,42 @@ export const PrivateChatModal: React.FC = () => {
         });
 
         setMessages(list);
+        setLoadingMessages(false);
 
-        // Mark unread as cleared for current user in chat doc
-        try {
-          const chatDocRef = doc(db, 'chats', chatId);
-          setDoc(
-            chatDocRef,
-            {
-              participants: [profile.id, activeChatPartner.id],
-              participantData: {
-                [profile.id]: {
-                  name: profile.fullName || 'Student',
-                  campus: profile.campus || 'FU Wukari',
-                  avatarUrl: profile.avatarUrl || '',
-                  phone: profile.phoneNumber || '',
+        // Only clear unread indicator if there are messages from the partner to read
+        const hasPartnerMessages = list.some((m) => m.senderId !== profile.id);
+        if (hasPartnerMessages) {
+          try {
+            const chatDocRef = doc(db, 'chats', chatId);
+            setDoc(
+              chatDocRef,
+              {
+                participants: [profile.id, activeChatPartner.id],
+                participantData: {
+                  [profile.id]: {
+                    name: profile.fullName || 'Student',
+                    campus: profile.campus || 'FU Wukari',
+                    avatarUrl: profile.avatarUrl || '',
+                    phone: profile.phoneNumber || '',
+                  },
+                  [activeChatPartner.id]: {
+                    name: activeChatPartner.fullName || 'Student',
+                    campus: activeChatPartner.campus || 'FU Wukari',
+                    avatarUrl: activeChatPartner.avatarUrl || '',
+                    phone: activeChatPartner.phone || '',
+                  },
                 },
-                [activeChatPartner.id]: {
-                  name: activeChatPartner.fullName || 'Student',
-                  campus: activeChatPartner.campus || 'FU Wukari',
-                  avatarUrl: activeChatPartner.avatarUrl || '',
-                  phone: activeChatPartner.phone || '',
-                },
+                unreadBy: [],
               },
-              unreadBy: [],
-            },
-            { merge: true }
-          );
-        } catch (err) {}
+              { merge: true }
+            );
+          } catch {}
+        }
       },
       (error) => {
-        console.warn('Real-time chat listener notice:', error.message);
+        console.warn('Real-time chat listener error:', error.message);
+        setChatError('Unable to sync messages in real time. Check your connection.');
+        setLoadingMessages(false);
       }
     );
 
@@ -152,12 +169,22 @@ export const PrivateChatModal: React.FC = () => {
   const handleSendMessage = async (e?: React.FormEvent, customText?: string, isOffer = false, offerAmt?: number) => {
     if (e) e.preventDefault();
     const textToSend = (customText || inputText).trim();
-    if (!textToSend || isSending) return;
+    if ((!textToSend && !selectedImage) || isSending) return;
 
+    const imageToUpload = selectedImage;
     if (!customText) setInputText('');
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    setSelectedImage(null);
+    setImagePreviewUrl(null);
+    setChatError(null);
     setIsSending(true);
 
     try {
+      let uploadedImageUrl: string | null = null;
+      if (imageToUpload) {
+        uploadedImageUrl = await uploadChatImage(imageToUpload, chatId, profile.id);
+      }
+
       const messagesRef = collection(db, 'chats', chatId, 'messages');
       const chatDocRef = doc(db, 'chats', chatId);
 
@@ -167,6 +194,7 @@ export const PrivateChatModal: React.FC = () => {
         senderName: profile.fullName || 'Student',
         senderAvatar: profile.avatarUrl || '',
         text: textToSend,
+        imageUrl: uploadedImageUrl,
         createdAt: serverTimestamp(),
         timestamp: Date.now(),
         read: false,
@@ -194,7 +222,9 @@ export const PrivateChatModal: React.FC = () => {
               phone: activeChatPartner.phone || '',
             },
           },
-          lastMessage: isOffer ? `Proposed price offer: ₦${Number(offerAmt).toLocaleString()}` : textToSend,
+          lastMessage: isOffer
+            ? `Proposed price offer: ₦${Number(offerAmt).toLocaleString()}`
+            : textToSend || '📷 Photo',
           lastMessageTime: serverTimestamp(),
           lastSenderId: profile.id,
           unreadBy: [activeChatPartner.id],
@@ -204,7 +234,9 @@ export const PrivateChatModal: React.FC = () => {
       );
     } catch (err: any) {
       console.error('Failed to send message:', err);
-      showToast('Message sent to conversation!', 'success');
+      setChatError(err?.message || 'Message failed to send. Please try again.');
+      if (!customText && textToSend) setInputText(textToSend);
+      showToast('Failed to send message. Check your connection.', 'error');
     } finally {
       setIsSending(false);
       setShowOfferDrawer(false);
@@ -469,6 +501,19 @@ export const PrivateChatModal: React.FC = () => {
           </div>
         )}
 
+        {/* Error Banner */}
+        {chatError && (
+          <div className="bg-red-50 border-b border-red-200 px-3 py-2 flex items-center justify-between text-xs text-red-700 font-bold">
+            <div className="flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <span>{chatError}</span>
+            </div>
+            <button onClick={() => setChatError(null)} className="text-red-500 hover:text-red-700 cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Real-time Message Feed */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-[#efeae2]/90">
           {/* Encrypted campus notice */}
@@ -478,7 +523,12 @@ export const PrivateChatModal: React.FC = () => {
             </span>
           </div>
 
-          {messages.length === 0 ? (
+          {loadingMessages ? (
+            <div className="text-center py-10 px-4">
+              <Loader2 className="w-7 h-7 animate-spin text-[#008751] mx-auto mb-2" />
+              <p className="text-xs text-gray-600 font-semibold">Loading conversation...</p>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="text-center py-10 px-4">
               <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#008751] flex items-center justify-center mx-auto mb-2">
                 <MessageSquare className="w-6 h-6" />
@@ -522,9 +572,19 @@ export const PrivateChatModal: React.FC = () => {
                       </div>
                     )}
 
-                    <p className="leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
-                      {msg.text}
-                    </p>
+                    {(msg as any).imageUrl && (
+                      <img
+                        src={(msg as any).imageUrl}
+                        alt="Shared image"
+                        className="mb-1.5 rounded-xl max-h-56 w-full object-cover border border-black/10"
+                      />
+                    )}
+
+                    {msg.text && (
+                      <p className="leading-relaxed text-gray-900 break-words whitespace-pre-wrap">
+                        {msg.text}
+                      </p>
+                    )}
 
                     <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-gray-400 font-medium">
                       <span>{timeString}</span>
@@ -542,6 +602,27 @@ export const PrivateChatModal: React.FC = () => {
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Pending image preview */}
+        {imagePreviewUrl && (
+          <div className="bg-white border-t border-gray-200 px-3 py-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <img src={imagePreviewUrl} alt="Preview" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
+              <span className="text-xs font-bold text-gray-700">Photo attached</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                URL.revokeObjectURL(imagePreviewUrl);
+                setImagePreviewUrl(null);
+                setSelectedImage(null);
+              }}
+              className="text-gray-400 hover:text-gray-700 p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Quick Student Campus Reply Chips */}
         <div className="bg-white/95 border-t border-gray-200 px-3 py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
@@ -562,6 +643,31 @@ export const PrivateChatModal: React.FC = () => {
           className="bg-[#f0f2f5] p-2 sm:p-2.5 border-t border-gray-200 flex items-center gap-2"
         >
           <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+              setSelectedImage(f);
+              setImagePreviewUrl(URL.createObjectURL(f));
+              e.target.value = '';
+            }}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSending}
+            title="Attach image"
+            className="w-10 h-10 rounded-full bg-white hover:bg-gray-100 text-gray-600 border border-gray-300 flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            <ImagePlus className="w-4 h-4" />
+          </button>
+
+          <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -572,10 +678,10 @@ export const PrivateChatModal: React.FC = () => {
 
           <button
             type="submit"
-            disabled={!inputText.trim() || isSending}
+            disabled={(!inputText.trim() && !selectedImage) || isSending}
             className="w-10 h-10 rounded-full bg-[#008751] hover:bg-emerald-700 disabled:opacity-40 text-white flex items-center justify-center shadow-xs transition-all flex-shrink-0 active:scale-95 cursor-pointer"
           >
-            <Send className="w-4 h-4 ml-0.5" />
+            {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
           </button>
         </form>
       </div>

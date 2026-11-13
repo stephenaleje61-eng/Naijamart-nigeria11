@@ -6,7 +6,9 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   sendPasswordResetEmail,
-  signInAnonymously
+  signInAnonymously,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -21,6 +23,7 @@ interface AuthContextType {
   setAuthMode: (mode: 'signin' | 'signup' | 'reset') => void;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   signInGuest: () => Promise<void>;
   signOutUser: () => Promise<void>;
@@ -119,10 +122,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const msg = String(err.message || '');
     return code === 'auth/operation-not-allowed' ||
            code === 'auth/admin-restricted-operation' ||
+           code === 'auth/unauthorized-domain' ||
            code.includes('operation-not-allowed') ||
            code.includes('admin-restricted-operation') ||
+           code.includes('unauthorized-domain') ||
            msg.includes('auth/operation-not-allowed') ||
+           msg.includes('auth/unauthorized-domain') ||
            msg.includes('OPERATION_NOT_ALLOWED');
+  };
+
+  const syncUserDocImmediately = (u: User) => {
+    if (!u?.uid) return;
+    setDoc(
+      doc(db, 'users', u.uid),
+      {
+        uid: u.uid,
+        displayName: u.displayName || u.email?.split('@')[0] || 'FU Market User',
+        email: u.email || '',
+        photoURL: u.photoURL || '',
+        isOnline: true,
+        lastSeen: serverTimestamp(),
+      },
+      { merge: true }
+    ).catch(() => {});
   };
 
   const createFallbackUser = (email: string) => {
@@ -140,12 +162,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithEmail = async (email: string, pass: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+      syncUserDocImmediately(cred.user);
       closeAuthModal();
     } catch (err: any) {
       if (isOpNotAllowed(err)) {
         const fallback = createFallbackUser(email);
         setUser(fallback);
+        syncUserDocImmediately(fallback);
         try { localStorage.setItem(LOCAL_STORAGE_AUTH, JSON.stringify(fallback)); } catch {}
         closeAuthModal();
         return;
@@ -156,14 +180,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUpWithEmail = async (email: string, pass: string) => {
     try {
-      await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      syncUserDocImmediately(cred.user);
       closeAuthModal();
     } catch (err: any) {
       if (isOpNotAllowed(err)) {
         const fallback = createFallbackUser(email);
         setUser(fallback);
+        syncUserDocImmediately(fallback);
         try { localStorage.setItem(LOCAL_STORAGE_AUTH, JSON.stringify(fallback)); } catch {}
         closeAuthModal();
+        return;
+      }
+      throw err;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
+      syncUserDocImmediately(cred.user);
+      closeAuthModal();
+    } catch (err: any) {
+      if (
+        isOpNotAllowed(err) ||
+        err?.code === 'auth/popup-blocked' ||
+        err?.code === 'auth/internal-error'
+      ) {
+        // Fallback smoothly to guest session if domain is not yet whitelisted for OAuth popups
+        await signInGuest();
+        return;
+      }
+      if (err?.code === 'auth/popup-closed-by-user') {
         return;
       }
       throw err;
@@ -183,18 +232,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInGuest = async () => {
     try {
-      await signInAnonymously(auth);
+      const cred = await signInAnonymously(auth);
+      syncUserDocImmediately(cred.user);
       closeAuthModal();
     } catch (err: any) {
       if (isOpNotAllowed(err)) {
+        let persistentGuestId = '';
+        try {
+          persistentGuestId = localStorage.getItem('fumarket_guest_uid') || '';
+        } catch {}
+        if (!persistentGuestId) {
+          persistentGuestId = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          try { localStorage.setItem('fumarket_guest_uid', persistentGuestId); } catch {}
+        }
         const guestUser = {
-          uid: `guest_${Date.now()}`,
-          email: 'guest.owner@naijamart.ng',
+          uid: persistentGuestId,
+          email: 'guest@fumarket.ng',
           phoneNumber: '+2348023456789',
-          displayName: 'Guest Owner',
+          displayName: 'FU Market Guest',
           isAnonymous: true,
         } as unknown as User;
         setUser(guestUser);
+        syncUserDocImmediately(guestUser);
         try { localStorage.setItem(LOCAL_STORAGE_AUTH, JSON.stringify(guestUser)); } catch {}
         closeAuthModal();
         return;
@@ -231,6 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthMode,
         signInWithEmail,
         signUpWithEmail,
+        signInWithGoogle,
         sendPasswordReset,
         signInGuest,
         signOutUser
